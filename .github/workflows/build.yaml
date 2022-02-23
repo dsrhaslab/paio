@@ -1,0 +1,36 @@
+# ---------------------------------------------------------------------------- #
+
+name: build  # the name is mostly to look good on status badges
+on:
+  - push
+  - pull_request
+
+jobs:
+
+  build-all-targets:
+
+    name: Build all targets
+    runs-on: ubuntu-20.04
+
+    steps:
+
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      # can prevent unnecessary reconfiguration but not recompilation
+      - name: Set up build cache
+        uses: actions/cache@v2
+        with:
+          path: ~/build
+          key: build-system
+
+      - name: Configure build
+        run: |
+            cmake -S . -B ~/build \
+                -D CMAKE_BUILD_TYPE=Debug -D CMAKE_CXX_FLAGS=-Werror \
+                -D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++
+
+      - name: Build all targets
+        run: cmake --build ~/build --config Debug
+
+# ---------------------------------------------------------------------------- #
