@@ -1,41 +1,41 @@
 The BSD 3-Clause "New" or "Modified" License
 
-Copyright (c) [2020-2021], INESC TEC
+Copyright (c) [2020-2022], INESC TEC
 
-PAIO is a general-purpose Software-Defined Storage framework that enables system 
-designers to build custom-made data plane stages. It allows the classification 
-and differentiation of I/O requests, and the enforcement of different mechanisms 
+PAIO is a general-purpose Software-Defined Storage framework that enables system
+designers to build custom-made data plane stages. It allows the classification
+and differentiation of I/O requests, and the enforcement of different mechanisms
 according to user-defined storage policies.
 
 This software is authored by:
 Ricardo Gonçalves Macedo
 
-Redistribution and use in source and binary forms, with or without modification, 
+Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, this 
+1. Redistributions of source code must retain the above copyright notice, this
 list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, this 
-list of conditions and the following disclaimer in the documentation and/or other 
+2. Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or other
 materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors may 
-be used to endorse or promote products derived from this software without specific 
+3. Neither the name of the copyright holder nor the names of its contributors may
+be used to endorse or promote products derived from this software without specific
 prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
-OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
-SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
-BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
-ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 
-This program makes use and is distributed with the following libraries: 
+This program makes use and is distributed with the following libraries:
 1. spdlog (https://github.com/gabime/spdlog)
 Copyright (c) 2016, Gabi Melman.
 2. smhasher (https://github.com/aappleby/smhasher)
@@ -47,9 +47,10 @@ Rua Dr. Roberto Frias
 4200-465 Porto
 Portugal
 
-If you use “PAIO” in a work that leads to a scientific publication, we would appreciate 
+If you use "PAIO" in a work that leads to a scientific publication, we would appreciate
 it if you would kindly cite it in your manuscript.
 
-Cite original paper: 
-Macedo, R., Tanimura, Y., Haga, J., Chidambaram, V., Pereira, J. and Paulo, J., 2021. 
-PAIO: A Software-Defined Storage Data Plane Framework. arXiv preprint arXiv:2106.03617.
+Cite original paper:
+Macedo, R., Tanimura, Y., Haga, J., Chidambaram, V., Pereira, J. and Paulo, J.
+PAIO: General, Portable I/O Optimizations With Minor Application Modifications.
+20th USENIX Conference on File and Storage Technologies.

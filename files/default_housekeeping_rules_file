@@ -1,0 +1,8 @@
+1 create_channel 1000 general 1000 foreground high_priority
+2 create_channel 2000 general 2000 background low_priority
+3 create_channel 3000 general 3000 no_op no_op
+4 create_channel 4000 general 4000 no_op no_op
+5 create_object 1000 1 general foreground no_op noop 0 0
+6 create_object 2000 1 general background no_op noop 0 0
+7 create_object 3000 1 general no_op no_op drl 0 0
+8 create_object 4000 1 general no_op no_op drl 0 0

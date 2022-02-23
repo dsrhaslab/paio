@@ -1,0 +1,34 @@
+BasedOnStyle: WebKit
+AlignConsecutiveAssignments: None
+AlignConsecutiveMacros: Consecutive
+AllowAllArgumentsOnNextLine: false
+AllowAllConstructorInitializersOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+AlwaysBreakTemplateDeclarations: Yes
+AllowShortBlocksOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: None
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: true
+  AfterStruct: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+BreakConstructorInitializers: AfterColon
+ColumnLimit: 100
+FixNamespaceComments: true
+IncludeBlocks: Regroup
+IndentCaseBlocks: false
+IndentCaseLabels: true
+PointerAlignment: Left
+SpaceAfterTemplateKeyword: false
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeParens: Always
+SpacesInContainerLiterals: false

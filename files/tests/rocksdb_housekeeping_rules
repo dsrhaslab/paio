@@ -1,0 +1,39 @@
+1 create_channel 1000 lsm_kvs_simple 1000 foreground foreground
+2 create_channel 1001 lsm_kvs_simple 1001 foreground foreground
+3 create_channel 1002 lsm_kvs_simple 1002 foreground foreground
+4 create_channel 1003 lsm_kvs_simple 1003 foreground foreground
+5 create_channel 1004 lsm_kvs_simple 1004 foreground foreground
+6 create_channel 1005 lsm_kvs_simple 1005 foreground foreground
+7 create_channel 1006 lsm_kvs_simple 1006 foreground foreground
+8 create_channel 1007 lsm_kvs_simple 1007 foreground foreground
+9 create_channel 2000 lsm_kvs_simple 2000 background bg_flush
+10 create_channel 3000 lsm_kvs_simple 3000 background no_op
+11 create_channel 3001 lsm_kvs_simple 3001 background no_op
+12 create_channel 3002 lsm_kvs_simple 3002 background no_op
+13 create_channel 3003 lsm_kvs_simple 3003 background no_op
+14 create_channel 3004 lsm_kvs_simple 3004 background no_op
+15 create_channel 3005 lsm_kvs_simple 3005 background no_op
+16 create_channel 3006 lsm_kvs_simple 3006 background no_op
+17 create_object 1000 1 lsm_kvs_simple foreground foreground noop 0 0
+18 create_object 1001 1 lsm_kvs_simple foreground foreground noop 0 0
+19 create_object 1002 1 lsm_kvs_simple foreground foreground noop 0 0
+20 create_object 1003 1 lsm_kvs_simple foreground foreground noop 0 0
+21 create_object 1004 1 lsm_kvs_simple foreground foreground noop 0 0
+22 create_object 1005 1 lsm_kvs_simple foreground foreground noop 0 0
+23 create_object 1006 1 lsm_kvs_simple foreground foreground noop 0 0
+24 create_object 1007 1 lsm_kvs_simple foreground foreground noop 0 0
+25 create_object 2000 1 lsm_kvs_simple background bg_flush drl 10000 12000000
+26 create_object 3000 1 lsm_kvs_simple background bg_compaction_high_priority drl 10000 12000000
+27 create_object 3000 2 lsm_kvs_simple background bg_compaction_low_priority drl 10000 6000000
+28 create_object 3001 1 lsm_kvs_simple background bg_compaction_high_priority drl 10000 12000000
+29 create_object 3001 2 lsm_kvs_simple background bg_compaction_low_priority drl 10000 6000000
+30 create_object 3002 1 lsm_kvs_simple background bg_compaction_high_priority drl 10000 12000000
+31 create_object 3002 2 lsm_kvs_simple background bg_compaction_low_priority drl 10000 6000000
+32 create_object 3003 1 lsm_kvs_simple background bg_compaction_high_priority drl 10000 12000000
+33 create_object 3003 2 lsm_kvs_simple background bg_compaction_low_priority drl 10000 6000000
+34 create_object 3004 1 lsm_kvs_simple background bg_compaction_high_priority drl 10000 12000000
+35 create_object 3004 2 lsm_kvs_simple background bg_compaction_low_priority drl 10000 6000000
+36 create_object 3005 1 lsm_kvs_simple background bg_compaction_high_priority drl 10000 12000000
+37 create_object 3005 2 lsm_kvs_simple background bg_compaction_low_priority drl 10000 6000000
+38 create_object 3006 1 lsm_kvs_simple background bg_compaction_high_priority drl 10000 12000000
+39 create_object 3006 2 lsm_kvs_simple background bg_compaction_low_priority drl 10000 6000000

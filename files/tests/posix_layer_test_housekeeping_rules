@@ -1,0 +1,9 @@
+1 create_channel 1000 posix 1000 read no_op
+2 create_channel 2000 posix 2000 write no_op
+3 create_channel 3000 posix 3000 open no_op
+4 create_channel 4000 posix 4000 close no_op
+5 create_object 1000 1 posix read no_op drl 10000 1073741824
+6 create_object 2000 1 posix write no_op drl 10000 1073741824
+7 create_object 3000 1 posix open no_op drl 10000 1073741824
+8 create_object 4000 1 posix close no_op drl 10000 1073741824
+

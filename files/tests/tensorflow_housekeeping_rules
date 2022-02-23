@@ -1,0 +1,2 @@
+1 create_channel 1000 posix 1000 read no_op
+2 create_object 1000 1 posix read no_op drl 10000 52428800

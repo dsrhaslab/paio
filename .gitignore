@@ -1,0 +1,19 @@
+# Editors.
+*.sw*
+.vscode
+.DS_Store
+
+# Build directory.
+build/
+out/
+.idea/
+cmake-build-debug/
+/CMakeCache.txt
+/CMakeFiles
+/CTestTestfile.cmake
+/Makefile
+/_deps
+/cmake_install.cmake
+/libpaio.*
+/paio_*
+tests/temporary/*
