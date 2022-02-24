@@ -66,7 +66,7 @@ Ricardo Macedo, Yusuke Tanimura, Jason Haga, Vijay Chidambaram, José Pereira, J
 This tutorial will guide on how to set up, benchmark, and integrate PAIO.
 For more details regarding each of these points, please refer to the [wiki]().
 
-**Dependencies**
+#### Dependencies
 PAIO is written with C++17 and was built and tested with `g++-9.3.0` and `cmake-3.16`.
 The core library depends on the [spdlog v1.8.1](https://github.com/gabime/spdlog) logging library.
 Benchmarking files have a dependency over [gflags v2.2.2](https://github.com/gflags/gflags), a
@@ -74,8 +74,7 @@ commandline flag processing library.
 Both dependencies are dynamically installed at compile time (check [CMakeLists.txt](CMakeLists.txt)
 for details).
 
-
-**Set up PAIO**
+#### Set up PAIO
 ```shell
 $ git clone https://github.com/dsrhaslab/paio.git
 $ cd paio
@@ -83,7 +82,7 @@ $ mkdir build; cd build
 $ cmake ..; cmake --build . -j
 ```
 
-**Run microbenchmarks**
+#### Run microbenchmarks
 ```shell
 $ cd build
 $ ./paio_bench --threads=4 --size=4096
@@ -115,7 +114,7 @@ Setup results: /tmp/paio-results/microbenchmarks-perf-results/micro-perf-results
 ----------------------------------
 ```
 
-**Additional benchmarks and tests**
+#### Additional benchmarks and tests
 The `/benchmarking` and `/tests` directories include a set microbenchmarks and tests to validate the
 performance and functionality of the PAIO library.
 For instance, the `/benchmarking` directory includes files to the `Noop` and `DynamicRateLimiter`
@@ -232,7 +231,7 @@ auto return_value = paio_instance->enforce (context, buffer, size, result);
 auto return_value = ::read (fd, buffer, size);
 ```
 
-**Context propagation**
+#### Context propagation
 Context propagation is useful be propagate information, only known to the application itself, to
 the data plane stage.
 To achieve this, system designers can instrument the data path of the targeted layer where the
@@ -240,7 +239,7 @@ information can be accessed, and make it available to the stage through the proc
 (e.g., global variables), shared memory, or thread-local variables.
 After that, we can use that information to build the `Context` object.
 
-**Transparent integration**
+#### Transparent integration
 To use PAIO data plane stages transparently, it exposes layer-oriented interfaces (e.g., `PosixLayer`)
 and uses `LD_PRELOAD` to replace the original interface calls at the top layer (e.g., read and write
 calls invoked by applications) for ones that are first submitted to PAIO before being submitted to
