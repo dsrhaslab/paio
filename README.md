@@ -16,8 +16,7 @@ according to user-defined storage policies.
 Examples of such policies can be as simple as rate limiting greedy tenants to achieve resource
 fairness, to more complex ones as coordinating workflows with different priorities to ensure
 sustained tail latency.
-Check the full paper on PAIO [paper](https://www.usenix.org/conference/fast22/presentation/macedo)
-for more details, as well as the [slides](https://www.usenix.org/conference/fast22/presentation/macedo)
+Check the [full paper](https://www.usenix.org/conference/fast22/presentation/macedo) on PAIO for more details, as well as the [slides](https://www.usenix.org/system/files/fast22_slides_macedo.pdf)
 of the FAST'22 talk, which explain the core ideas behind PAIO.
 
 To perform complex I/O optimization outside the application, PAIO needs to propagate context down
@@ -51,11 +50,14 @@ Ricardo Macedo, Yusuke Tanimura, Jason Haga, Vijay Chidambaram, José Pereira, J
 
 ```bibtex
 @inproceedings {Macedo2022Paio,
-    title     = {{PAIO: General, Portable I/O Optimizations With Minor Application Modifications}},
-    author    = {Ricardo Macedo and Yusuke Tanimura and Jason Haga and Vijay Chidambaram and José Pereira and João Paulo},
-    booktitle = {{20th USENIX Conference on File and Storage Technologies}},
+    title     = {{PAIO}: General, Portable {I/O} Optimizations With Minor Application Modifications},
+    author    = {Ricardo Macedo and Yusuke Tanimura and Jason Haga and Vijay Chidambaram and Jos{\'e} Pereira and Jo{\~a}o Paulo},
+    booktitle = {20th USENIX Conference on File and Storage Technologies},
     year      = {2022},
-    publisher = {{USENIX Association}},
+    isbn      = {978-1-939133-26-7},
+    address   = {Santa Clara, CA},
+    pages     = {413--428},
+    publisher = {USENIX Association},
     url       = {https://www.usenix.org/conference/fast22/presentation/macedo}
 }
 ```
