@@ -191,10 +191,14 @@ enum class POSIX {
     lchown = 88,
     fchown = 89,
     fchownat = 90,
+    mknod = 91,
+    mknodat = 92,
+    mmap = 93,
+    munmap = 94,
     no_op = 0
 };
 
-const int posix_size = 91;
+const int posix_size = 95;
 
 /**
  * POSIX_META definitions.

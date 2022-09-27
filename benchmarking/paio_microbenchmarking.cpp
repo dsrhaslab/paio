@@ -68,7 +68,7 @@ ThreadResults stress_test (FILE* fd,
         // create a predetermined context object, with a fixed workflow id, operation type
         // (PAIO_GENERAL::Noop), operation (PAIO_GENERAL::Noop), operation size, and total
         // operations
-        paio::core::Context context { workflow_id,
+        paio::core::Context context { (workflow_id * 1000),
             static_cast<int> (paio::core::PAIO_GENERAL::no_op),
             static_cast<int> (paio::core::PAIO_GENERAL::no_op),
             static_cast<uint64_t> (operation_size),
@@ -84,7 +84,7 @@ ThreadResults stress_test (FILE* fd,
 
         // validate if message was successfully enforced
         if (result == -1) {
-            std::cerr << "Error: posix_noop failed" << std::endl;
+            std::cerr << "Error: posix_noop failed (" << context.to_string () << ")" << std::endl;
         }
         assert (result != -1);
     }
@@ -288,9 +288,22 @@ MergedResults execute_run (FILE* fd,
         .m_cumulative_throughput = 0 };
 
     // create a shared PaioStage object
-    std::shared_ptr<paio::PaioStage> stage {
-        std::make_shared<paio::PaioStage> (channels, create_default_enf_objects, stage_name)
-    };
+    std::shared_ptr<paio::PaioStage> stage = nullptr;
+
+    if (paio::options::option_default_communication_type
+        == paio::options::CommunicationType::none) {
+        stage
+            = std::make_shared<paio::PaioStage> (channels, create_default_enf_objects, stage_name);
+    } else {
+        stage = std::make_shared<paio::PaioStage> (channels,
+            create_default_enf_objects,
+            stage_name,
+            paio::options::CommunicationType::none,
+            paio::options::option_default_socket_name (),
+            paio::options::option_default_port);
+    }
+
+    std::cout << stage->stage_info_to_string () << std::endl;
 
     // initialization of the Posix Instance layer
     paio::PosixLayer posix_instance (stage);

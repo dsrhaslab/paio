@@ -143,9 +143,9 @@ private:
     void generate_builder ()
     {
         std::stringstream stream;
-        stream << "Generate (enforcement object differentiation) builder (";
-        stream << this->m_use_operation_type << ",";
-        stream << this->m_use_operation_context << "): ";
+        stream << "EnforcementObject differentiation builder (";
+        stream << (this->m_use_operation_type ? "true" : "false") << ",";
+        stream << (this->m_use_operation_context ? "true" : "false") << "): ";
 
         if (this->m_use_operation_type && this->m_use_operation_context) {
             this->m_func_build_token = [this] (const uint32_t& operation_type,
@@ -154,7 +154,7 @@ private:
                 this->build_type_context (operation_type, operation_context, hash_value);
             };
 
-            stream << "&ObjectHashingDifferentiation::build_type_context";
+            stream << "build_type_context";
         } else if (this->m_use_operation_type) {
             this->m_func_build_token = [this] (const uint32_t& operation_type,
                                            const uint32_t& operation_context,
@@ -162,7 +162,7 @@ private:
                 this->build_type (operation_type, operation_context, hash_value);
             };
 
-            stream << "&ObjectHashingDifferentiation::build_type";
+            stream << "build_type";
         } else if (this->m_use_operation_context) {
             this->m_func_build_token = [this] (const uint32_t& operation_type,
                                            const uint32_t& operation_context,
@@ -170,7 +170,7 @@ private:
                 this->build_context (operation_type, operation_context, hash_value);
             };
 
-            stream << "&ObjectHashingDifferentiation::build_context";
+            stream << "build_context";
         } else {
             this->m_func_build_token = [this] (const uint32_t& operation_type,
                                            const uint32_t& operation_context,
@@ -178,7 +178,7 @@ private:
                 this->build_no_diff (operation_type, operation_context, hash_value);
             };
 
-            stream << "&ObjectHashingDifferentiation::build_no_diff";
+            stream << "build_no_diff";
         }
 
         // debug message

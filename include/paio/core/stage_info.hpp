@@ -28,7 +28,7 @@ namespace paio::core {
  * into a StageSimplifiedHandshakeRaw or a StageDetailedHandshakeRaw object.
  * Currently, the StageInfo class provides the following variables:
  * - m_name: defines the name of the data plane stage.
- * - m_env: defines the environment variable value registered for the data plane stage.
+ * - m_opt: defines the value of an additional option registered for the data plane stage.
  * - m_description: defines the description of the data plane stage, including what is the stage
  * used for, and more.
  * - m_pid: defines the process identifier where the data plane stage is executing.
@@ -41,7 +41,7 @@ class StageInfo {
 
 private:
     const std::string m_name { this->set_name () };
-    const std::string m_env { this->set_env () };
+    const std::string m_opt { this->set_opt () };
     std::string m_description {};
     const pid_t m_pid { ::getpid () };
     const pid_t m_ppid { ::getppid () };
@@ -57,12 +57,12 @@ private:
     [[nodiscard]] std::string set_name () const;
 
     /**
-     * set_env: set data plane stage environment variable. This method invokes a getenv call over
-     * the option_environment_variable_env value.
+     * set_opt: set data plane stage environment variable. This method invokes a getenv call over
+     * the option_environment_variable_opt value.
      * @return If the environment variable exists, returns its value; otherwise, returns an empty
      * string.
      */
-    [[nodiscard]] std::string set_env () const;
+    [[nodiscard]] std::string set_opt () const;
 
     /**
      * set_hostname: set data plane stage hostname. This method allocates a buffer for setting the
@@ -110,10 +110,10 @@ public:
     [[nodiscard]] std::string get_name () const;
 
     /**
-     * get_env: get data plane stage environment variable.
-     * @return Returns a copy of the m_env value.
+     * get_env: get data plane stage optional variable.
+     * @return Returns a copy of the m_opt value.
      */
-    [[nodiscard]] std::string get_env () const;
+    [[nodiscard]] std::string get_opt () const;
 
     /**
      * get_description: get the data plane stage's description.

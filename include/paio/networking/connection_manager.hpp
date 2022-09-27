@@ -50,7 +50,7 @@ private:
     std::shared_ptr<std::atomic<int>> m_socket { std::make_shared<std::atomic<int>> (-1) };
     ConnectionOptions m_connection_options {};
     std::shared_ptr<Agent> m_agent_ptr { nullptr };
-    std::shared_ptr<std::atomic<bool>> m_connection_interrupted { nullptr };
+    std::shared_ptr<std::atomic<bool>> m_shutdown { nullptr };
     std::unique_ptr<HandshakeConnectionHandler> m_handshake_connection_handler { nullptr };
     std::unique_ptr<SouthboundConnectionHandler> m_southbound_connection_handler { nullptr };
     std::thread m_connection_thread;
@@ -102,22 +102,22 @@ public:
      * @param connection_options Defines the main options to be used to establish the connection
      * between the data plane stage and the SDS control plane.
      * @param agent_ptr Pointer to the Agent object.
-     * @param interrupted Shared pointer to the atomic boolean that indicates if the connection is
+     * @param shutdown Shared pointer to the atomic boolean that indicates if the connection is
      * interrupted.
      */
     ConnectionManager (const ConnectionOptions& connection_options,
         std::shared_ptr<Agent> agent_ptr,
-        std::shared_ptr<std::atomic<bool>> interrupted);
+        std::shared_ptr<std::atomic<bool>> shutdown);
 
     /**
      * ConnectionManager parameterized constructor. It connects to the control plane using default
      * connection options.
      * @param agent_ptr Pointer to the Agent object.
-     * @param interrupted Shared pointer to the atomic boolean that indicates if the connection is
+     * @param shutdown Shared pointer to the atomic boolean that indicates if the connection is
      * interrupted.
      */
     ConnectionManager (std::shared_ptr<Agent> agent_ptr,
-        std::shared_ptr<std::atomic<bool>> interrupted);
+        std::shared_ptr<std::atomic<bool>> shutdown);
 
     /**
      * ConnectionManager default destructor. It disconnects from the control plane.
@@ -131,14 +131,6 @@ public:
      * @return Returns a const value of the connection_interrupted_ variable.
      */
     [[nodiscard]] bool is_connection_interrupted () const;
-
-    /**
-     * set_connection_interrupted: Atomically defines a new value for the shared
-     * connection_interrupted parameter. This will allow to terminate the connection between the
-     * PAIO data plane stage and the SDS controller.
-     * @param value New value to be updated.
-     */
-    void set_connection_interrupted (bool value);
 
     /**
      * get_socket_identifier: get the socket identifier (file descriptor) of the socket that

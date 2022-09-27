@@ -173,8 +173,8 @@ public:
         message.append ("   name\t\t: ").append (h_obj.m_stage_name).append (" (");
         message.append (std::to_string (sizeof (h_obj.m_stage_name))).append (")\n");
 
-        message.append ("   env\t\t: ").append (h_obj.m_stage_env).append (" (");
-        message.append (std::to_string (sizeof (h_obj.m_stage_env))).append (")\n");
+        message.append ("   opt\t\t: ").append (h_obj.m_stage_opt).append (" (");
+        message.append (std::to_string (sizeof (h_obj.m_stage_opt))).append (")\n");
 
         message.append ("   pid\t\t: ").append (std::to_string (h_obj.m_pid)).append (" (");
         message.append (std::to_string (sizeof (h_obj.m_pid))).append (")\n");
@@ -242,9 +242,9 @@ int main (int argc, char** argv)
     std::string stage_name = paio::options::option_environment_variable_name ();
     std::string stage_name_value = "paio-stage-info-test";
     test.test_set_environment (stage_name, stage_name_value);
-    std::string stage_env = paio::options::option_environment_variable_env ();
-    std::string stage_env_value = "tmp";
-    test.test_set_environment (stage_env, stage_env_value);
+    std::string stage_opt = paio::options::option_environment_variable_opt ();
+    std::string stage_opt_value = "tmp";
+    test.test_set_environment (stage_opt, stage_opt_value);
 
     // test StageInfo serialization
     StageInfo stage_info { name };

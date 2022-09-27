@@ -9,13 +9,40 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Setup the basic C++ Compiler flags
+if (APPLE)
+    message(STATUS "Detecting Local Environment (apple-clang)")
+    option(IS_LOCAL "Install PAIO in local setup" ON)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif (APPLE)
+
+if (UNIX AND NOT APPLE)
+    message(STATUS "Detecting UNIX")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wl,--no-as-needed -ldl")
+endif ()
+
 set(warn_opts -Wall -Wextra -Wno-unused-parameter -Wno-implicit-fallthrough)
+
+# Install PAIO to be used in production. This option will modify the 
+# compilation options, regarding compiler-based optimizations.
+option(PRODUCTION "Compiling with release mode" ON)
+
+if (PRODUCTION) 
+    message(STATUS "Compiling with compiler-based optimizations (-O3)")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+else() 
+    message(STATUS "Compiling with default compiling options")
+endif (PRODUCTION)
 
 # Setup the options that CMake can take in
 option(PAIO_INSTALL "Install PAIO header and library" ON)
-option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+
+# build static or shared lib option
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+
 # functional tests options
 option(PAIO_BUILD_TESTS "Build PAIO unit tests" ON)
+
 # benchmarking options
 option(PAIO_BUILD_BENCHMARKS "Build PAIO benchmarks" ON)
 
@@ -89,6 +116,7 @@ target_sources(
     ${PROJECT_SOURCE_DIR}/include/paio/interface/lsm_kvs_layer.hpp
     ${PROJECT_SOURCE_DIR}/include/paio/interface/paio_instance.hpp
     ${PROJECT_SOURCE_DIR}/include/paio/interface/posix_layer.hpp
+    ${PROJECT_SOURCE_DIR}/include/paio/options/libc_headers.hpp
     ${PROJECT_SOURCE_DIR}/include/paio/options/options.hpp
     ${PROJECT_SOURCE_DIR}/include/paio/rules/differentiation_rule.hpp
     ${PROJECT_SOURCE_DIR}/include/paio/rules/differentiation_table.hpp
@@ -153,6 +181,7 @@ FetchContent_Declare(spdlog
     URL             https://github.com/gabime/spdlog/archive/v1.8.1.tar.gz
     UPDATE_COMMAND  ""
     INSTALL_COMMAND ""
+    DOWNLOAD_EXTRACT_TIMESTAMP NEW
 )
 
 FetchContent_MakeAvailable(spdlog)
@@ -169,6 +198,7 @@ if (PAIO_BUILD_BENCHMARKS)
         URL             https://github.com/gflags/gflags/archive/refs/tags/v2.2.2.tar.gz
         UPDATE_COMMAND  ""
         INSTALL_COMMAND ""
+        DOWNLOAD_EXTRACT_TIMESTAMP NEW
     )
 
     FetchContent_MakeAvailable(gflags)

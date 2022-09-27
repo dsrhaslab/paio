@@ -54,7 +54,7 @@ Core::Core (const int& channels,
                     status = this->create_enforcement_object (i, // channel-id
                         0, // object-id
                         diff_pair,
-                        paio::options::EnforcementObjectType::NOOP, // object type
+                        paio::options::EnforcementObjectType::noop, // object type
                         {}); // configurations
 
                     if (!status.is_ok ()) {
@@ -86,13 +86,6 @@ void Core::define_channel_differentiation (const bool& workflow,
     this->m_channel_diff_builder->set_classifiers (workflow, operation_type, operation_context);
     // bind function builder with new classifiers
     this->m_channel_diff_builder->bind_builder ();
-
-    // log message
-    std::string message { "Channel differentiation (" };
-    message.append (workflow ? "true" : "false").append (", ");
-    message.append (operation_type ? "true" : "false").append (", ");
-    message.append (operation_context ? "true" : "false").append (")\n");
-    Logging::log_debug (message);
 }
 
 // define_enforcement_object_differentiation_with_channel_token call. Define how EnforcementObject

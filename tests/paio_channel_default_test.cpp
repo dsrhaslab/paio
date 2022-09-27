@@ -190,7 +190,7 @@ public:
         long object_id = 1;
         auto operation_type = static_cast<uint32_t> (POSIX::no_op);
         auto operation_context = static_cast<uint32_t> (POSIX::no_op);
-        auto object_type = EnforcementObjectType::NOOP;
+        auto object_type = EnforcementObjectType::noop;
         std::vector<long> configurations {};
 
         // create enforcement object
@@ -524,12 +524,12 @@ int main (int argc, char** argv)
     std::this_thread::sleep_for (std::chrono::seconds (2));
 
     test.test_configure_enforcement_object (&channel,
-        paio::options::EnforcementObjectType::DRL,
+        paio::options::EnforcementObjectType::drl,
         static_cast<int> (DRLConfiguration::rate),
         { 100000 });
 
     test.test_channel_enforce (num_workers,
         num_enforce,
-        paio::options::EnforcementObjectType::NOOP,
+        paio::options::EnforcementObjectType::noop,
         { 1000000, 500000 }); // only useful for the DRL object
 }

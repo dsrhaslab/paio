@@ -6,12 +6,18 @@
 #ifndef PAIO_LOGGING_HPP
 #define PAIO_LOGGING_HPP
 
+#include <dlfcn.h>
+#include <fcntl.h>
 #include <iomanip>
 #include <iostream>
+#include <paio/options/libc_headers.hpp>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 #include <sstream>
+#include <unistd.h>
+
+using namespace paio::headers;
 
 namespace paio::utils {
 
@@ -28,13 +34,46 @@ class Logging {
 
 private:
     std::shared_ptr<spdlog::logger> m_logger {};
-    static FILE* m_fd;
+    static bool m_is_ld_preloaded;
+    static int m_fd;
+    static void* m_dl_handle;
+    static std::string m_log_file_path;
 
     /**
      * set_debug: enable/disable logging debug messages.
      * @param debug Boolean value that enables (if true) the debugging mode, and disable otherwise.
      */
     void set_debug (bool debug);
+
+    /**
+     * create_formatted_info_message:
+     */
+    static std::string create_formatted_info_message (const std::string& message);
+
+    /**
+     * create_formatted_warn_message:
+     */
+    static std::string create_formatted_warn_message (const std::string& message);
+
+    /**
+     * create_formatted_debug_message:
+     */
+    static std::string create_formatted_debug_message (const std::string& message);
+
+    /**
+     * create_formatted_error_message:
+     */
+    static std::string create_formatted_error_message (const std::string& message);
+
+    /**
+     * dlsym_write_message:
+     */
+    static ssize_t dlsym_write_message (const std::string& message);
+
+    /**
+     * initialize:
+     */
+    void initialize ();
 
 public:
     static bool m_debug_enabled;
@@ -61,6 +100,12 @@ public:
      * @param message Log message.
      */
     static void log_info (const std::string& message);
+
+    /**
+     * log_warn: Log a message with the WARN qualifier.
+     * @param message Log message.
+     */
+    static void log_warn (const std::string& message);
 
     /**
      * log_error: Log a message with the ERROR qualifier.

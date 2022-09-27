@@ -57,9 +57,9 @@ Agent::Agent (const CommunicationType& communication_type,
     std::shared_ptr<std::atomic<bool>> ready,
     const int& instances,
     std::shared_ptr<StageInfo> stage_identifier) :
-    m_core { std::move (core) },
-    m_ready { std::move (ready) },
-    m_stage_identifier { std::move (stage_identifier) }
+    m_core { core },
+    m_ready { ready },
+    m_stage_identifier { stage_identifier }
 {
     // create log message
     std::string message { "Agent parameterized constructor (" };
@@ -109,9 +109,9 @@ Agent::Agent (const CommunicationType& communication_type,
     const int& instances,
     std::shared_ptr<StageInfo> stage_identifier,
     const bool& execute_on_receive) :
-    m_core { std::move (core) },
-    m_ready { std::move (ready) },
-    m_stage_identifier { std::move (stage_identifier) },
+    m_core { core },
+    m_ready { ready },
+    m_stage_identifier { stage_identifier },
     m_housekeeping_rule_file { housekeeping_rules_file_path },
     m_differentiation_rule_file { differentiation_rules_file_path },
     m_enforcement_rule_file { enforcement_rules_file_path },

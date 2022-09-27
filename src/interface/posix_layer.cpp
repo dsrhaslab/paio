@@ -760,7 +760,8 @@ ssize_t PosixLayer::posix_base (const void* buf, size_t count, const Context& co
         return (result.get_content_size () > 0) ? static_cast<ssize_t> (result.get_content_size ())
                                                 : static_cast<ssize_t> (count);
     } else {
-        Logging::log_error ("PosixLayer: noop operation was not successfully enforced.");
+        Logging::log_error ("PosixLayer: noop operation was not successfully enforced ("
+            + context.to_string () + ").");
         return -1;
     }
 }

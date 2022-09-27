@@ -142,12 +142,6 @@ PStatus DynamicRateLimiter::initialize (const long& refill_period,
     const long& rate,
     [[maybe_unused]] const bool& collect_statistics)
 {
-    // log debug message
-    std::string message { "DynamicRateLimiter::Initialize (" };
-    message.append (std::to_string (refill_period)).append (", ");
-    message.append (std::to_string (rate)).append (")");
-    Logging::log_debug (message);
-
     { // critical section
         std::unique_lock<std::mutex> lock (m_mutex);
         // set token-bucket's m_refill_period with the new value
@@ -159,6 +153,13 @@ PStatus DynamicRateLimiter::initialize (const long& refill_period,
         // set token-bucket's capacity (given a refill_period and max_throughput)
         this->m_bucket.set_capacity (static_cast<token> (rate));
     }
+
+    // log debug message
+    std::string message { "DynamicRateLimiter::Initialize (" };
+    message.append (std::to_string (this->m_bucket.get_capacity ())).append (", ");
+    message.append (std::to_string (this->m_bucket.get_token_count ())).append (", ");
+    message.append (std::to_string (this->m_bucket.get_refill_period ())).append (")");
+    Logging::log_debug (message);
 
     return PStatus::OK ();
 }

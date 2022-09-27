@@ -82,21 +82,15 @@ public:
      * @param connection_options Defines the main options to be used to establish the connection
      * between the data plane stage and the SDS control plane.
      * @param agent_ptr Shared pointer to the Agent object.
-     * @param interrupted Shared pointer to the atomic boolean that indicates if the connection is
-     * interrupted.
      */
     HandshakeConnectionHandler (const ConnectionOptions& connection_options,
-        std::shared_ptr<Agent> agent_ptr,
-        std::shared_ptr<std::atomic<bool>> interrupted);
+        std::shared_ptr<Agent> agent_ptr);
 
     /**
      * HandshakeConnectionHandler parameterized constructor.
      * @param agent_ptr Shared pointer to the Agent object.
-     * @param interrupted Shared pointer to the atomic boolean that indicates if the connection is
-     * interrupted.
      */
-    HandshakeConnectionHandler (std::shared_ptr<Agent> agent_ptr,
-        std::shared_ptr<std::atomic<bool>> interrupted);
+    HandshakeConnectionHandler (std::shared_ptr<Agent> agent_ptr);
 
     /**
      * HandshakeConnectionHandler default destructor.

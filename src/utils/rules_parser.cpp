@@ -77,6 +77,8 @@ int RulesParser::read_rules_from_file (const fs::path& path)
     std::ifstream input_stream;
 
     int total_rules = 0;
+    // TODO: Tasks pending completion -@gsd at 4/19/2022, 11:37:17 AM
+    // replace this open for an ld_preload enabled one
     // open file stream
     input_stream.open (path.string ());
 
@@ -119,7 +121,7 @@ HousekeepingOperation RulesParser::convert_housekeeping_operation (
 // convert_object_type call. Convert a string to the respective EnforcementObjectType.
 EnforcementObjectType RulesParser::convert_object_type (const std::string& object_type) const
 {
-    return (object_type == "drl") ? EnforcementObjectType::DRL : EnforcementObjectType::NOOP;
+    return (object_type == "drl") ? EnforcementObjectType::drl : EnforcementObjectType::noop;
 }
 
 // convertEnforcementOperation call. Convert a string to an enforcement operation.
@@ -127,7 +129,7 @@ int RulesParser::convert_enforcement_operation (const EnforcementObjectType& obj
     const std::string& operation) const
 {
     switch (object_type) {
-        case EnforcementObjectType::DRL:
+        case EnforcementObjectType::drl:
             switch (paio::utils::hash (operation.data ())) {
                 case "init"_:
                     return 1;
@@ -139,7 +141,7 @@ int RulesParser::convert_enforcement_operation (const EnforcementObjectType& obj
                     return 0;
             }
 
-        case EnforcementObjectType::NOOP:
+        case EnforcementObjectType::noop:
             return 0;
 
         default:
@@ -204,8 +206,12 @@ long RulesParser::convert_paio_general_definitions (const std::string& general_d
             return static_cast<long> (PAIO_GENERAL::high_priority);
         case "low_priority"_:
             return static_cast<long> (PAIO_GENERAL::low_priority);
-        default:
+        case "no_op"_:
             return static_cast<long> (PAIO_GENERAL::no_op);
+        default:
+            throw std::runtime_error (
+                "Unknown PAIO_GENERAL function (hint: the request-type/request-context field does "
+                "not match with the available elements of the chosen context-definition.)");
     }
 }
 
@@ -225,8 +231,12 @@ long RulesParser::convert_posix_lsm_simple_definitions (
             return static_cast<long> (LSM_KVS_SIMPLE::foreground);
         case "background"_:
             return static_cast<long> (LSM_KVS_SIMPLE::background);
-        default:
+        case "no_op"_:
             return static_cast<long> (LSM_KVS_SIMPLE::no_op);
+        default:
+            throw std::runtime_error (
+                "Unknown LSM_KVS_SIMPLE function (hint: the request-type/request-context field "
+                "does not match with the available elements of the chosen context-definition.)");
     }
 }
 
@@ -252,8 +262,12 @@ long RulesParser::convert_posix_lsm_detailed_definitions (
             return static_cast<long> (LSM_KVS_DETAILED::bg_compaction_LN);
         case "foreground"_:
             return static_cast<long> (LSM_KVS_DETAILED::foreground);
-        default:
+        case "no_op"_:
             return static_cast<long> (LSM_KVS_DETAILED::no_op);
+        default:
+            throw std::runtime_error (
+                "Unknown LSM_KVS_DETAILED function (hint: the request-type/request-context field "
+                "does not match with the available elements of the chosen context-definition.)");
     }
 }
 
@@ -439,8 +453,12 @@ long RulesParser::convert_posix_definitions (const std::string& posix_definition
             return static_cast<long> (POSIX::fchownat);
         case "lchown"_:
             return static_cast<long> (POSIX::lchown);
-        default:
+        case "no_op"_:
             return static_cast<long> (POSIX::no_op);
+        default:
+            throw std::runtime_error (
+                "Unknown POSIX function (hint: the request-type/request-context field does not "
+                "match with the available elements of the chosen context-definition.)");
     }
 }
 
@@ -469,8 +487,12 @@ long RulesParser::convert_posix_meta_definitions (const std::string& posix_meta_
             return static_cast<long> (POSIX_META::ext_attr_op);
         case "file_mod_op"_:
             return static_cast<long> (POSIX_META::file_mod_op);
+        case "no_op"_:
+            return static_cast<long> (POSIX_META::no_op);
         default:
-            return static_cast<long> (POSIX::no_op);
+            throw std::runtime_error (
+                "Unknown POSIX_META function (hint: the request-type/request-context field does "
+                "not match with the available elements of the chosen context-definition.)");
     }
 }
 
@@ -496,8 +518,12 @@ long RulesParser::convert_kvs_definitions (const std::string& kvs_definitions) c
             return static_cast<long> (KVS::get_approximate_size);
         case "compact_range"_:
             return static_cast<long> (KVS::compact_range);
-        default:
+        case "no_op"_:
             return static_cast<long> (KVS::no_op);
+        default:
+            throw std::runtime_error (
+                "Unknown KVS function (hint: the request-type/request-context field does not match "
+                "with the available elements of the chosen context-definition.)");
     }
 }
 

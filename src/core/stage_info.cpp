@@ -8,16 +8,21 @@
 namespace paio::core {
 
 // StageInfo default constructor.
-StageInfo::StageInfo () = default;
+StageInfo::StageInfo ()
+{
+    Logging::log_debug ("StageInfo default constructor.");
+}
 
 // StageInfo (explicit) parameterized constructor.
-StageInfo::StageInfo (std::string stage_name) : m_name { std::move (stage_name) }
-{ }
+StageInfo::StageInfo (std::string stage_name) : m_name { stage_name }
+{
+    Logging::log_debug ("StageInfo (explicit) parameterized constructor.");
+}
 
 // StageInfo copy constructor.
 StageInfo::StageInfo (const StageInfo& info) :
     m_name { info.m_name },
-    m_env { info.m_env },
+    m_opt { info.m_opt },
     m_description { info.m_description },
     m_pid { info.m_pid },
     m_ppid { info.m_ppid },
@@ -28,7 +33,7 @@ StageInfo::StageInfo (const StageInfo& info) :
 // StageInfo default destructor.
 StageInfo::~StageInfo () = default;
 
-// set_env call. Set data plane stage environment variable.
+// set_name call. Set data plane stage environment variable.
 std::string StageInfo::set_name () const
 {
     // get environment variable for data plane stage
@@ -45,30 +50,31 @@ std::string StageInfo::set_name () const
         return { name_ptr };
     } else {
         // log message
-        Logging::log_debug (
-            "Inaccessible environment variable (using default data plane stage name).");
+        Logging::log_warn ("Inaccessible environment variable ("
+            + option_environment_variable_name () + "): using default data plane stage name.");
         return { option_default_data_plane_stage_name () };
     }
 }
 
-// set_env call. Set data plane stage environment variable.
-std::string StageInfo::set_env () const
+// set_opt call. Set data plane stage environment variable.
+std::string StageInfo::set_opt () const
 {
     // get environment variable for data plane stage
-    auto env_ptr = std::getenv (option_environment_variable_env ().c_str ());
+    auto opt_ptr = std::getenv (option_environment_variable_opt ().c_str ());
 
-    if (env_ptr != nullptr) {
+    if (opt_ptr != nullptr) {
         // log message
         std::string log_message { "Value of `" };
-        log_message.append (option_environment_variable_env ()).append ("` env is `");
-        log_message.append (env_ptr).append ("`\n");
+        log_message.append (option_environment_variable_opt ()).append ("` env is `");
+        log_message.append (opt_ptr).append ("`\n");
 
         Logging::log_debug (log_message);
 
-        return { env_ptr };
+        return { opt_ptr };
     } else {
         // log message
-        Logging::log_debug ("Inaccessible environment variable.");
+        Logging::log_warn (
+            "Inaccessible environment variable (" + option_environment_variable_opt () + ").");
         return "";
     }
 }
@@ -113,10 +119,10 @@ std::string StageInfo::get_name () const
     return this->m_name;
 }
 
-// get_env call. Return a copy of the m_env value.
-std::string StageInfo::get_env () const
+// get_opt call. Return a copy of the m_opt value.
+std::string StageInfo::get_opt () const
 {
-    return this->m_env;
+    return this->m_opt;
 }
 
 // get_description call. Return a copy of the m_description value.
@@ -159,24 +165,24 @@ std::string StageInfo::get_login_name () const
 void StageInfo::serialize (StageInfoRaw& handshake_obj)
 {
     // validate StageInfo's name size
-    if (this->m_name.size () > stage_name_max_size) {
-        throw std::out_of_range (
-            "StageInfo's name is larger than " + std::to_string (stage_name_max_size) + " bytes.");
+    if (this->m_name.size () > paio::core::stage_name_max_size) {
+        throw std::out_of_range ("StageInfo's name is larger than "
+            + std::to_string (paio::core::stage_name_max_size) + " bytes.");
     }
     // copy stage name to handshake_obj
     std::strcpy (handshake_obj.m_stage_name, this->m_name.c_str ());
 
-    // validate StageInfo's env size
-    if (!this->m_env.empty ()) {
-        if (this->m_env.size () > stage_env_max_size) {
-            throw std::out_of_range ("StageInfo's env is larger than "
-                + std::to_string (stage_env_max_size) + " bytes.");
+    // validate StageInfo's opt size
+    if (!this->m_opt.empty ()) {
+        if (this->m_opt.size () > paio::core::stage_opt_max_size) {
+            throw std::out_of_range ("StageInfo's opt is larger than "
+                + std::to_string (paio::core::stage_opt_max_size) + " bytes.");
         } else {
             // copy StageInfo's env to handshake_obj
-            std::strcpy (handshake_obj.m_stage_env, this->m_env.c_str ());
+            std::strcpy (handshake_obj.m_stage_opt, this->m_opt.c_str ());
         }
     } else {
-        std::strcpy (handshake_obj.m_stage_env, "");
+        std::strcpy (handshake_obj.m_stage_opt, "");
     }
 
     // copy StageInfo's pid info to handshake_obj
@@ -215,7 +221,7 @@ std::string StageInfo::to_string ()
 {
     std::string message { "StageInfo {" };
     message.append (this->m_name).append (", ");
-    message.append ((!this->m_env.empty ()) ? this->m_env : "<empty env>").append (", ");
+    message.append ((!this->m_opt.empty ()) ? this->m_opt : "<empty opt>").append (", ");
     message.append ((!this->m_description.empty ()) ? this->m_description : "<empty description>")
         .append (", ");
     message.append (std::to_string (this->m_pid)).append (", ");

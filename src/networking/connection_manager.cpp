@@ -9,8 +9,7 @@
 namespace paio::networking {
 
 // ConnectionManager default constructor.
-ConnectionManager::ConnectionManager () :
-    m_connection_interrupted { std::make_shared<std::atomic<bool>> (false) }
+ConnectionManager::ConnectionManager () : m_shutdown { std::make_shared<std::atomic<bool>> (false) }
 {
     Logging::log_debug ("ConnectionManager default constructor.");
 
@@ -22,13 +21,13 @@ ConnectionManager::ConnectionManager () :
 // ConnectionOptions object and the interrupted shared-pointer.
 ConnectionManager::ConnectionManager (const ConnectionOptions& connection_options,
     std::shared_ptr<Agent> agent_ptr,
-    std::shared_ptr<std::atomic<bool>> interrupted) :
+    std::shared_ptr<std::atomic<bool>> shutdown) :
     m_socket { std::make_shared<std::atomic<int>> (-1) },
     m_connection_options { connection_options },
     m_agent_ptr { agent_ptr },
-    m_connection_interrupted { interrupted },
+    m_shutdown { shutdown },
     m_handshake_connection_handler {
-        std::make_unique<HandshakeConnectionHandler> (connection_options, agent_ptr, interrupted)
+        std::make_unique<HandshakeConnectionHandler> (connection_options, agent_ptr)
     }
 {
     Logging::log_debug ("ConnectionManager parameterized constructor.");
@@ -40,13 +39,12 @@ ConnectionManager::ConnectionManager (const ConnectionOptions& connection_option
 // ConnectionManager parameterized constructor. Initializes ConnectionManager object using a
 // ConnectionOptions object and the interrupted shared-pointer.
 ConnectionManager::ConnectionManager (std::shared_ptr<Agent> agent_ptr,
-    std::shared_ptr<std::atomic<bool>> interrupted) :
+    std::shared_ptr<std::atomic<bool>> shutdown) :
     m_socket { std::make_shared<std::atomic<int>> (-1) },
     m_connection_options {},
     m_agent_ptr { agent_ptr },
-    m_connection_interrupted { interrupted },
-    m_handshake_connection_handler { std::make_unique<HandshakeConnectionHandler> (agent_ptr,
-        interrupted) }
+    m_shutdown { shutdown },
+    m_handshake_connection_handler { std::make_unique<HandshakeConnectionHandler> (agent_ptr) }
 {
     Logging::log_debug ("ConnectionManager parameterized constructor.");
 
@@ -62,15 +60,17 @@ void ConnectionManager::connect (const ConnectionOptions& connection_options)
     this->spawn_handshake_listening_thread (Logging::is_debug_enabled ());
 
     // create ConnectionOptions for the Southbound connection handler
-    ConnectionOptions southbound_connection_options { option_default_communication_type,
+    ConnectionOptions southbound_connection_options {
+        paio::options::option_default_communication_type,
         this->m_handshake_connection_handler->get_southbound_socket_name (),
-        this->m_handshake_connection_handler->get_southbound_socket_port () };
+        this->m_handshake_connection_handler->get_southbound_socket_port ()
+    };
 
     // initialize SouthboundConnectionHandler
     this->m_southbound_connection_handler
         = std::make_unique<SouthboundConnectionHandler> (southbound_connection_options,
             this->m_agent_ptr,
-            this->m_connection_interrupted);
+            this->m_shutdown);
 
     // spawn thread to receive southbound operations from the control plane
     if (this->m_southbound_connection_handler != nullptr) {
@@ -90,9 +90,6 @@ ConnectionManager::~ConnectionManager ()
 // the control plane.
 void ConnectionManager::disconnect_from_control_plane ()
 {
-    // mark connection as interrupted
-    this->set_connection_interrupted (true);
-
     // verify the type of communication
     if (this->m_connection_options.get_connection_type () != CommunicationType::none) {
         // join communication thread
@@ -113,12 +110,10 @@ void ConnectionManager::spawn_handshake_listening_thread (const bool& debug)
             this->m_handshake_connection_handler.get (),
             debug);
 
-        // fixme: use conditions to wait for the handshake to be completed
-        while (this->is_connection_interrupted () == false) {
-            std::this_thread::sleep_for (std::chrono::milliseconds (100));
-        }
         // join thread
+        Logging::log_debug ("Waiting for handhshake to be completed ... ");
         this->m_connection_thread.join ();
+        Logging::log_debug ("Joined handshake-listening thread ...");
     } else {
         Logging::log_info ("PaioStage running without control plane.");
     }
@@ -149,13 +144,7 @@ void ConnectionManager::spawn_southbound_listening_thread (const bool& debug)
 // established or was interrupted.
 bool ConnectionManager::is_connection_interrupted () const
 {
-    return this->m_connection_interrupted->load ();
-}
-
-// set_connection_interrupted call. Atomically define a new value to m_connection_interrupted.
-void ConnectionManager::set_connection_interrupted (bool value)
-{
-    this->m_connection_interrupted->store (value);
+    return this->m_shutdown->load ();
 }
 
 // get_socket_identifier call. Get the socket identifier (file descriptor) of the socket that
@@ -172,7 +161,7 @@ std::string ConnectionManager::to_string () const
     message.append (
         (this->m_socket != nullptr) ? std::to_string (this->m_socket->load ()) : "nullptr");
     message.append (", ").append (this->m_connection_options.to_string ()).append (", ");
-    message.append (std::to_string (this->m_connection_interrupted->load ())).append ("}");
+    message.append (std::to_string (this->m_shutdown->load ())).append ("}");
     return message;
 }
 

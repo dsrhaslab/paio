@@ -15,12 +15,14 @@ using namespace paio::statistics;
 namespace fs = std::filesystem;
 
 #define PAIO_MAJOR 0
-#define PAIO_MINOR 1
+#define PAIO_MINOR 2
 #define PAIO_PATCH 0
 
 namespace paio::options {
 
-// typedef uint32_t diff_token_t;
+/**
+ * @brief create diff_toke_t type.
+ */
 using diff_token_t = uint32_t;
 
 static const int kMajorVersion = PAIO_MAJOR;
@@ -30,10 +32,12 @@ static const int kPatchVersion = PAIO_PATCH;
 /**
  * EnforcementObjectType enum class.
  * Defines the type of available enforcement objects.
- *  - DRL respects to the DynamicRateLimiting enforcement object;
- *  - Noop respects to the Noop enforcement object;.
+ *  - drl respects to the DynamicRateLimiting enforcement object;
+ *  - noop respects to the noop enforcement object;
+ *  TODO: Tasks pending completion -@ricardomacedo at 9/27/2022, 2:39:52 PM
+ *  - support EnforcementObjectType compression (comp) and encryption (enc)
  */
-enum class EnforcementObjectType { DRL = 1, NOOP = 0 };
+enum class EnforcementObjectType { drl = 1, noop = 0 };
 
 /**
  * CommunicationType enum class.
@@ -45,7 +49,7 @@ enum class EnforcementObjectType { DRL = 1, NOOP = 0 };
  *  TODO:
  *   - support rpc communication interface.
  */
-enum class CommunicationType { unix = 1, inet = 2, rpc = 3, none = 0 };
+enum class CommunicationType { _unix = 1, inet = 2, rpc = 3, none = 0 };
 
 /**
  * ChannelMode enum class.
@@ -81,6 +85,8 @@ enum class HashingScheme { MurmurHash_x86_32 = 1, MurmurHash_x86_128 = 2, Murmur
  */
 const CommunicationType option_default_communication_type { CommunicationType::none };
 
+// FIXME: Needing refactor or cleanup -@gsd at 6/15/2022, 2:45:10 PM
+// Rollback this option when conducting the experiments
 /**
  * option_default_debug_log: Defines the default debug logging option. If enabled (true),
  * Logging::log_debug and Logging::log_debug_explicit messages will be written to stdout (or to a
@@ -88,25 +94,33 @@ const CommunicationType option_default_communication_type { CommunicationType::n
  * It is recommended to use this option under preliminary experiments or debugging purposes. Do not
  * use it under production environments.
  */
-const bool option_default_debug_log { false };
+const bool option_default_debug_log { true };
+
+// FIXME: Needing refactor or cleanup -@gsd at 6/15/2022, 2:45:10 PM
+// Rollback this option when using PADLL
+/**
+ * option_default_ld_preload_enabled:
+ */
+constexpr bool option_default_ld_preload_enabled { false };
 
 /**
  * option_environment_variable: Defines the default environment variable path for the stage name.
  * This value will be used by the StageInfo class for getting the name of the data plane stage.
  */
-inline std::string option_environment_variable_name ()
+inline const std::string option_environment_variable_name ()
 {
-    return "paio_name";
+    return "paio_stage_name";
 }
 
 /**
- * option_environment_variable: Defines the default environment variable path.
+ * option_environment_variable_opt: Defines the default environment variable path for an additional/
+ * optional field to include in PAIO.
  * This value will be used by the StageInfo class for getting additional data plane stage
  * information stored in this environment variable.
  */
-inline std::string option_environment_variable_env ()
+inline const std::string option_environment_variable_opt ()
 {
-    return "paio_env";
+    return "paio_stage_opt";
 }
 
 /**
@@ -164,7 +178,8 @@ inline fs::path option_default_enforcement_rules_file_path ()
  */
 inline std::string option_default_socket_name ()
 {
-    return "/tmp/9Lq7BNBnBycd6nxy.socket";
+    // return "/tmp/9Lq7BNBnBycd6nxy.socket";
+    return "/tmp/0.0.0.0:50054.socket";
 }
 
 /**
@@ -230,7 +245,7 @@ const bool option_define_default_object_differentiation_on_create_channel { true
  * considered for channel selection, and the respective classification and differentiation of I/O
  * requests.
  */
-const bool option_default_channel_differentiation_workflow { true };
+const bool option_default_channel_differentiation_workflow { false };
 
 /**
  * option_default_channel_differentiation_operation_type: Defines if the operation type I/O
@@ -244,21 +259,21 @@ const bool option_default_channel_differentiation_operation_type { false };
  * classifier should be considered for channel selection, and the respective classification and
  * differentiation of I/O requests.
  */
-const bool option_default_channel_differentiation_operation_context { false };
+const bool option_default_channel_differentiation_operation_context { true };
 
 /**
  * option_default_enforcement_object_differentiation_operation_type: Defines if the operation type
  * I/O classifier should be considered for EnforcementObject selection, and the respective
  * classification and differentiation of I/O requests.
  */
-const bool option_default_enforcement_object_differentiation_operation_type { true };
+const bool option_default_enforcement_object_differentiation_operation_type { false };
 
 /**
  * option_default_enforcement_object_differentiation_operation_context: Defines if the operation
  * type I/O classifier should be considered for EnforcementObject selection, and the respective
  * classification and differentiation of I/O requests.
  */
-const bool option_default_enforcement_object_differentiation_operation_context { true };
+const bool option_default_enforcement_object_differentiation_operation_context { false };
 
 /**
  * option_default_channel_thread_pool_size: Defines the size of the channel's thread pool to dequeue
@@ -295,13 +310,13 @@ const StatisticMetric option_default_statistic_metric { StatisticMetric::through
  * In case of ClassifierType::operation_context, statistics will be collected based on the operation
  * context classifier, namely bg_flush, bg_compaction, etc.
  */
-const ClassifierType option_default_statistic_classifier { ClassifierType::operation_type };
+const ClassifierType option_default_statistic_classifier { ClassifierType::operation_context };
 
 /**
  * option_default_context_type: Default operation context classifier type to be considered in I/O
  * differentiation (e.g., context propagation, channel differentiation, and enforcement object
- * differentiation). The available options are PAIO_GENERAL, POSIX, POSIX_META, LSM_KVS_SIMPLE,
- * LSM_LVS_DETAILED, and KVS.
+ * differentiation). Some of the available options are PAIO_GENERAL, POSIX, and LSM_KVS_SIMPLE. The
+ * full list is available in the ContextType enum class at the context_propagation_definitions.hpp.
  */
 const ContextType option_default_context_type { ContextType::PAIO_GENERAL };
 

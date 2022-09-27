@@ -16,20 +16,15 @@ HandshakeConnectionHandler::HandshakeConnectionHandler () : ConnectionHandler {}
 
 // HandshakeConnectionHandler fully parameterized constructor.
 HandshakeConnectionHandler::HandshakeConnectionHandler (const ConnectionOptions& connection_options,
-    std::shared_ptr<Agent> agent_ptr,
-    std::shared_ptr<std::atomic<bool>> interrupted) :
-    ConnectionHandler { connection_options,
-        agent_ptr,
-        interrupted,
-        ConnectionHandlerType::handshake_handler }
+    std::shared_ptr<Agent> agent_ptr) :
+    ConnectionHandler { connection_options, agent_ptr, ConnectionHandlerType::handshake_handler }
 {
     Logging::log_debug ("HandshakeConnectionHandler fully parameterized constructor.");
 }
 
 // HandshakeConnectionHandler parameterized constructor.
-HandshakeConnectionHandler::HandshakeConnectionHandler (std::shared_ptr<Agent> agent_ptr,
-    std::shared_ptr<std::atomic<bool>> interrupted) :
-    ConnectionHandler { agent_ptr, interrupted, ConnectionHandlerType::handshake_handler }
+HandshakeConnectionHandler::HandshakeConnectionHandler (std::shared_ptr<Agent> agent_ptr) :
+    ConnectionHandler { agent_ptr, ConnectionHandlerType::handshake_handler }
 {
     Logging::log_debug ("HandshakeConnectionHandler parameterized constructor.");
 }
@@ -38,8 +33,6 @@ HandshakeConnectionHandler::HandshakeConnectionHandler (std::shared_ptr<Agent> a
 HandshakeConnectionHandler::~HandshakeConnectionHandler ()
 {
     Logging::log_debug_explicit ("HandshakeConnectionHandler destructor.");
-    // explicitly set connection interrupted on destructor.
-    this->m_connection_interrupted->store (true);
 }
 
 // read_control_operation_from_socket call. Read ControlOperation object from socket.
@@ -52,8 +45,15 @@ ssize_t HandshakeConnectionHandler::read_control_operation_from_socket (ControlO
     // verify if m_socket is valid
     if (ConnectionHandler::m_socket->load () > 0) {
         // read instruction from socket
-        return_value
-            = ::read (ConnectionHandler::m_socket->load (), operation, sizeof (ControlOperation));
+        return_value = ConnectionHandler::socket_read (operation, sizeof (ControlOperation));
+
+        // create debug message
+        std::string log_message = "handshake_handler::socket_read (";
+        log_message.append (std::to_string (return_value)).append (",");
+        log_message.append (std::to_string (operation->m_operation_type)).append (",");
+        log_message.append (std::to_string (operation->m_operation_subtype)).append (",");
+        log_message.append (std::to_string (operation->m_size)).append (")");
+        Logging::log_debug (log_message);
 
         if (return_value < 0) {
             Logging::log_error (
@@ -82,7 +82,8 @@ ssize_t HandshakeConnectionHandler::handle_control_operation (const ControlOpera
             break;
 
         default:
-            throw std::logic_error ("HandshakeConnectionHandler: unknown operation type");
+            throw std::logic_error ("HandshakeConnectionHandler: unknown operation type ("
+                + std::to_string (operation.m_operation_type) + ")");
     }
 
     // logging return-value message
@@ -111,8 +112,7 @@ ssize_t HandshakeConnectionHandler::stage_handshake ()
         // acquire write lock
         std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
         // write StageInfoRaw object to socket
-        return_value
-            = ::write (ConnectionHandler::m_socket->load (), &info_obj, sizeof (StageInfoRaw));
+        return_value = ConnectionHandler::socket_write (&info_obj, sizeof (StageInfoRaw));
     }
 
     // validate return value
@@ -127,9 +127,7 @@ ssize_t HandshakeConnectionHandler::stage_handshake ()
         std::unique_lock<std::mutex> read_lock (this->m_socket_read_lock);
 
         // read handshake response (StageHandshakeRaw object) from socket
-        return_value = ::read (ConnectionHandler::m_socket->load (),
-            &handshake_obj,
-            sizeof (StageHandshakeRaw));
+        return_value = ConnectionHandler::socket_read (&handshake_obj, sizeof (StageHandshakeRaw));
     }
 
     // validate return value
@@ -156,7 +154,7 @@ void HandshakeConnectionHandler::listen (const bool& debug)
     auto read_bytes = this->read_control_operation_from_socket (&control_operation);
 
     // validate bytes read and connection state
-    if (read_bytes > 0 && !this->is_connection_interrupted ()) {
+    if (read_bytes > 0) {
         // Receive and handle the rule submitted by the controller
         read_bytes = this->handle_control_operation (control_operation, debug);
     }
@@ -165,9 +163,6 @@ void HandshakeConnectionHandler::listen (const bool& debug)
     if (read_bytes <= 0) {
         throw std::runtime_error ("ConnectionManager: failed to receive control operation.");
     }
-
-    // interrupt connection
-    this->m_connection_interrupted->store (true);
 }
 
 // get_southbound_socket_name call. Return the name/address of the southbound connection socket.

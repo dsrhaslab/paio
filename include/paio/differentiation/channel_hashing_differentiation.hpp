@@ -246,10 +246,10 @@ private:
     void generate_builder ()
     {
         std::stringstream stream;
-        stream << "Generate (channel differentiation) builder (";
-        stream << this->m_use_workflow << ",";
-        stream << this->m_use_operation_type << ",";
-        stream << this->m_use_operation_context << "): ";
+        stream << "Channel differentiation builder (";
+        stream << (this->m_use_workflow ? "true" : "false") << ",";
+        stream << (this->m_use_operation_type ? "true" : "false") << ",";
+        stream << (this->m_use_operation_context ? "true" : "false") << "): ";
 
         if (this->m_use_workflow && this->m_use_operation_type && this->m_use_operation_context) {
             this->m_func_build_token = [this] (const uint32_t& workflow_id,
@@ -262,7 +262,7 @@ private:
                     hash_value);
             };
 
-            stream << "&ChannelHashingDifferentiation::build_workflow_type_context";
+            stream << "build_workflow_type_context";
         } else if (this->m_use_workflow && this->m_use_operation_type) {
             this->m_func_build_token = [this] (const uint32_t& workflow_id,
                                            const uint32_t& operation_type,
@@ -274,7 +274,7 @@ private:
                     hash_value);
             };
 
-            stream << "&ChannelHashingDifferentiation::build_workflow_type";
+            stream << "build_workflow_type";
         } else if (this->m_use_workflow && this->m_use_operation_context) {
             this->m_func_build_token = [this] (const uint32_t& workflow_id,
                                            const uint32_t& operation_type,
@@ -286,7 +286,7 @@ private:
                     hash_value);
             };
 
-            stream << "&ChannelHashingDifferentiation::build_workflow_context";
+            stream << "build_workflow_context";
         } else if (this->m_use_workflow) {
             this->m_func_build_token = [this] (const uint32_t& workflow_id,
                                            const uint32_t& operation_type,
@@ -295,7 +295,7 @@ private:
                 this->build_workflow (workflow_id, operation_type, operation_context, hash_value);
             };
 
-            stream << "&ChannelHashingDifferentiation::build_workflow";
+            stream << "build_workflow";
         } else if (this->m_use_operation_type && this->m_use_operation_context) {
             this->m_func_build_token = [this] (const uint32_t& workflow_id,
                                            const uint32_t& operation_type,
@@ -307,7 +307,7 @@ private:
                     hash_value);
             };
 
-            stream << "&ChannelHashingDifferentiation::build_type_context";
+            stream << "build_type_context";
         } else if (this->m_use_operation_type) {
             this->m_func_build_token = [this] (const uint32_t& workflow_id,
                                            const uint32_t& operation_type,
@@ -316,7 +316,7 @@ private:
                 this->build_type (workflow_id, operation_type, operation_context, hash_value);
             };
 
-            stream << "&ChannelHashingDifferentiation::build_type";
+            stream << "build_type";
         } else if (this->m_use_operation_context) {
             this->m_func_build_token = [this] (const uint32_t& workflow_id,
                                            const uint32_t& operation_type,
@@ -325,7 +325,7 @@ private:
                 this->build_context (workflow_id, operation_type, operation_context, hash_value);
             };
 
-            stream << "&ChannelHashingDifferentiation::build_context";
+            stream << "build_context";
         } else {
             this->m_func_build_token = [this] (const uint32_t& workflow_id,
                                            const uint32_t& operation_type,
@@ -334,7 +334,7 @@ private:
                 this->build_no_diff (workflow_id, operation_type, operation_context, hash_value);
             };
 
-            stream << "&ObjectHashingDifferentiation::build_no_diff";
+            stream << "build_no_diff";
         }
 
         // debug message

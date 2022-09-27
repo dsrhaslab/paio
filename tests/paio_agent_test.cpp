@@ -126,7 +126,7 @@ public:
                     auto operation_context = static_cast<uint32_t> (random () % operation_bound);
 
                     // create DRL object (static)
-                    auto enf_object_type = static_cast<long> (EnforcementObjectType::DRL);
+                    auto enf_object_type = static_cast<long> (EnforcementObjectType::drl);
                     long property_first = random () % 1000000; // refill period
                     long property_second = random () % 1000000; // rate
 
@@ -396,11 +396,11 @@ int main (int argc, char** argv)
     }
 
     // get PAIO environment variable and define its value
-    std::string env_name { paio::options::option_environment_variable_env () };
-    std::string env_value { "tmp" };
+    std::string env_opt_name { paio::options::option_environment_variable_opt () };
+    std::string env_opt_value { "tmp" };
 
     // set PAIO environment variable
-    auto return_value = set_env (env_name, env_value);
+    auto return_value = set_env (env_opt_name, env_opt_value);
 
     std::shared_ptr<StageInfo> stage_info = std::make_shared<StageInfo> ("testing-stage");
     int instances = -1;
@@ -451,6 +451,6 @@ int main (int argc, char** argv)
 
     // unset environment variable
     if (return_value) {
-        unset_env (env_name);
+        unset_env (env_opt_name);
     }
 }

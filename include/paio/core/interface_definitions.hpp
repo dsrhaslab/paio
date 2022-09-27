@@ -69,6 +69,9 @@ enum class ControlPlaneOperationSubtype {
     hsk_create_object = 2,
     collect_stats_rocksdb = 3, // fixme: remove ...
     collect_stats_tensorflow = 4, // fixme: remove ...
+    collect_stats_global = 5,
+    collect_stats_metadata_data = 6,
+    collect_stats_mds = 7,
     no_op = 0
 };
 
@@ -118,9 +121,9 @@ struct ACK {
 const int stage_name_max_size = 200;
 
 /**
- * stage_env_max_size: defines the maximum size of the StageInfo's env.
+ * stage_opt_max_size: defines the maximum size of the StageInfo's opt.
  */
-const int stage_env_max_size = 50;
+const int stage_opt_max_size = 50;
 
 /**
  * define HOST_NAME_MAX and LOGIN_NAME_MAX limits, for the StageInfo's hostname and login_name.
@@ -133,7 +136,7 @@ const int stage_env_max_size = 50;
 /**
  * StageInfoRaw: Raw structure that identifies the Data Plane Stage.
  * - m_stage_name: defines the stage identifier (name).
- * - m_stage_env: defines the environment variable value registered for the data plane stage;
+ * - m_stage_opt: defines the environment variable value registered for the data plane stage;
  * - m_pid: defines the pid of the process where the data plane stage is executing;
  * - m_ppid: defines the parent pid of the process where the data plane stage is executing.
  * - m_stage_hostname: defines the hostname where the data plane stage is executing;
@@ -141,7 +144,7 @@ const int stage_env_max_size = 50;
  */
 struct StageInfoRaw {
     char m_stage_name[stage_name_max_size] {};
-    char m_stage_env[stage_env_max_size] {};
+    char m_stage_opt[stage_opt_max_size] {};
     int m_pid { -1 };
     int m_ppid { -1 };
     char m_stage_hostname[HOST_NAME_MAX] {};
@@ -190,8 +193,8 @@ inline std::string stage_info_raw_string (const StageInfoRaw& handshake_object)
     std::string message { "StageHandshakeRaw deserialization:\n" };
     message.append ("\tname : ").append (handshake_object.m_stage_name).append (" (");
     message.append (std::to_string (sizeof (handshake_object.m_stage_name))).append (")\n");
-    message.append ("\tenv : ").append (handshake_object.m_stage_env).append (" (");
-    message.append (std::to_string (sizeof (handshake_object.m_stage_env))).append (")\n");
+    message.append ("\topt : ").append (handshake_object.m_stage_opt).append (" (");
+    message.append (std::to_string (sizeof (handshake_object.m_stage_opt))).append (")\n");
     message.append ("\tpid : ").append (std::to_string (handshake_object.m_pid)).append ("\n");
     message.append ("\tppid : ").append (std::to_string (handshake_object.m_ppid)).append ("\n");
     message.append ("Size of struct: ")
@@ -434,6 +437,25 @@ struct StatsSilkRaw {
 struct StatsTensorFlowRaw {
     double m_read_rate;
     double m_write_rate;
+};
+
+/**
+ * StatsGlobalRaw: Raw structure to perform the serialization of I/O statistics between the PAIO
+ * stage and the control plane. These statistics are general, and provide the aggregated throughput
+ * value of the windowed statistics.
+ */
+struct StatsGlobalRaw {
+    double m_total_rate;
+};
+
+/**
+ * StatsDataMetadataRaw: Raw structure to perform the serialization of I/O statistics between the
+ * PAIO stage and the control plane. These are general statistics regarding the data and metadata
+ * operations, and provide the aggregated throughput value of the windowed statistics.
+ */
+struct StatsDataMetadataRaw {
+    double m_total_metadata_rate;
+    double m_total_data_rate;
 };
 
 } // namespace paio::core

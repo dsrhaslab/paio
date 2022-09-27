@@ -299,7 +299,7 @@ using namespace paio;
  *  - option_default_channel_differentiation_workflow = true;
  * execution sample:
  *  $ ./posix_layer_test
- *  $ env paio_name="" ./posix_layer_test
+ *  $ env paio_stage_name="" ./posix_layer_test
  */
 int main (int argc, char** argv)
 {
@@ -320,9 +320,9 @@ int main (int argc, char** argv)
     std::string stage_name = paio::options::option_environment_variable_name ();
     std::string stage_name_value = "Posix-layer-test";
     test.set_env (stage_name, stage_name_value);
-    std::string stage_env = paio::options::option_environment_variable_env ();
-    std::string stage_env_value = "instance-1";
-    test.set_env (stage_env, stage_env_value);
+    std::string stage_opt = paio::options::option_environment_variable_opt ();
+    std::string stage_opt_value = "instance-1";
+    test.set_env (stage_opt, stage_opt_value);
 
     int channels = 4;
     bool default_object_creation = true;

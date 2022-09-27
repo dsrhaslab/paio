@@ -163,13 +163,13 @@ PStatus ChannelDefault::create_enforcement_object (const long& enforcement_objec
         hash_value);
 
     switch (object_type) {
-        case EnforcementObjectType::DRL:
+        case EnforcementObjectType::drl:
             status = this->m_submission_queue.create_enforcement_object (hash_value,
                 std::make_unique<DynamicRateLimiter> (enforcement_object_id,
                     this->m_collect_object_statistics));
             break;
 
-        case EnforcementObjectType::NOOP:
+        case EnforcementObjectType::noop:
             status = this->m_submission_queue.create_enforcement_object (hash_value,
                 std::make_unique<NoopObject> (enforcement_object_id));
             break;
@@ -186,7 +186,7 @@ PStatus ChannelDefault::create_enforcement_object (const long& enforcement_objec
 
         // apply existing configurations to the enforcement object
         if (!configurations.empty ()) {
-            if (object_type == EnforcementObjectType::DRL) {
+            if (object_type == EnforcementObjectType::drl) {
                 status = m_submission_queue.configure_enforcement_object (hash_value,
                     static_cast<int> (DRLConfiguration::init),
                     configurations);

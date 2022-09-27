@@ -146,6 +146,7 @@ public:
     /**
      * build_context_object: Method for building Context objects for the differentiation and
      * classification of application requests at the Paio data plane stage.
+     * This method is lock-free.
      * @param workflow_id Defines the workflow identifier used to submit the request (from the
      * application to the data plane stage).
      * @param operation_type Defines the type of the submitted operation (from the application to
@@ -168,6 +169,7 @@ public:
      * object (which will contain the result after the enforcement). Further, this method assumes
      * that a performance-oriented mechanism will be applied, and thus, the request's content (i.e.,
      * buffer) and size are set with nullptr and 0, respectively.
+     * This method is lock-free.
      * @param context Context object containing all necessary metadata/classifiers to enforce the
      * I/O request.
      * @param result Reference to a Result object that will store the result of enforcing the
@@ -179,6 +181,7 @@ public:
      * enforce: Method for enforcing I/O requests at the data plane stage.
      * This method receives the Context object (which specifies all I/O classifiers), the request's
      * content and size, and a Result object (which will contain the result after the enforcement).
+     * This method is lock-free.
      * @param context Context object containing all necessary metadata/classifiers to enforce the
      * I/O request.
      * @param buffer Content to be enforced.

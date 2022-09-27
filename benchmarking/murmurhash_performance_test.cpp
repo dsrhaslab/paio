@@ -29,7 +29,7 @@ private:
     void log_results (FILE* fd,
         const HashingScheme& scheme,
         const long& iterations,
-        const duration<double>& elapsed_seconds)
+        const duration<double>& elapsed_seconds) const
     {
         std::string header {};
         switch (scheme) {
@@ -74,7 +74,7 @@ private:
     void test_murmurhash3_x86_32 (FILE* fd,
         const std::string& msg,
         const long& iterations,
-        bool detailed)
+        bool detailed) const
     {
         // create differentiation token builder (w/ MurmurHash x86_32)
         std::unique_ptr<DifferentiationTokenBuilder> builder {
@@ -119,7 +119,7 @@ private:
     void test_murmurhash3_x86_128 (FILE* fd,
         const std::string& msg,
         const long& iterations,
-        bool detailed)
+        bool detailed) const
     {
         // create differentiation token builder (w/ MurmurHash x86_128)
         std::unique_ptr<DifferentiationTokenBuilder> builder {
@@ -167,7 +167,7 @@ private:
     void test_murmurhash3_x64_128 (FILE* fd,
         const std::string& msg,
         const long& iterations,
-        bool detailed)
+        bool detailed) const
     {
         // create differentiation token builder (w/ MurmurHash x64_128)
         std::unique_ptr<DifferentiationTokenBuilder> builder {
@@ -214,7 +214,7 @@ public:
      */
     std::string build_message (const uint32_t& workflow_id,
         const uint32_t& operation_type,
-        const uint32_t& operation_context)
+        const uint32_t& operation_context) const
     {
         std::string message_token { std::to_string (workflow_id) };
         message_token.append ("|").append (std::to_string (operation_type));
@@ -235,7 +235,7 @@ public:
         FILE* fd,
         const std::string& message,
         const long& iterations,
-        bool detailed)
+        bool detailed) const
     {
         switch (scheme) {
             case HashingScheme::MurmurHash_x86_32:
@@ -251,7 +251,7 @@ public:
                 break;
 
             default:
-                std::cerr << "Murmurhash not supported.\n";
+                std::cerr << "MurmurHash not supported.\n";
         }
     }
 };

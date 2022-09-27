@@ -10,26 +10,29 @@ namespace paio {
 // PaioStage default constructor.
 PaioStage::PaioStage () :
     m_core { std::make_shared<Core> () },
-    m_stage_info { std::make_shared<StageInfo> (option_default_data_plane_stage_name ()) },
-    m_agent { std::make_shared<Agent> (option_default_communication_type,
+    m_stage_info { std::make_shared<StageInfo> (
+        paio::options::option_default_data_plane_stage_name ()) },
+    m_agent { std::make_shared<Agent> (paio::options::option_default_communication_type,
         this->m_core,
         this->m_ready,
-        option_default_housekeeping_rules_file_path (),
-        option_default_differentiation_rules_file_path (),
-        option_default_enforcement_rules_file_path (),
+        paio::options::option_default_housekeeping_rules_file_path (),
+        paio::options::option_default_differentiation_rules_file_path (),
+        paio::options::option_default_enforcement_rules_file_path (),
         -1,
         this->m_stage_info,
         true) },
-    m_connection_manager { this->m_agent, this->m_interrupted }
+    m_connection_manager { this->m_agent, this->m_shutdown }
 {
     // log message for printing the PaioStage properties
     std::string message { "PaioStage default constructor (" };
     message.append (std::to_string (this->m_core.use_count ())).append (", ");
     message.append (std::to_string (this->m_ready.use_count ())).append (", ");
-    message.append (std::to_string (this->m_interrupted.use_count ())).append (", ");
+    message.append (std::to_string (this->m_shutdown.use_count ())).append (", ");
     message.append (std::to_string (this->m_agent.use_count ())).append (", ");
     message.append (std::to_string (this->m_stage_info.use_count ())).append (")\n");
     Logging::log_debug (message);
+
+    std::cout << "Paio stage additional log (" << static_cast<void*> (this) << ")\n";
 
     // log (debug) message for printing the connection manager properties
     Logging::log_debug (this->m_connection_manager.to_string ());
@@ -39,16 +42,16 @@ PaioStage::PaioStage () :
 PaioStage::PaioStage (const int& channels,
     const bool& default_object_creation,
     const std::string& stage_identifier) :
-    m_core {
-        std::make_shared<Core> (channels, option_create_default_channels, default_object_creation)
-    },
+    m_core { std::make_shared<Core> (channels,
+        paio::options::option_create_default_channels,
+        default_object_creation) },
     m_stage_info { std::make_shared<StageInfo> (stage_identifier) },
-    m_agent { std::make_shared<Agent> (option_default_communication_type,
+    m_agent { std::make_shared<Agent> (paio::options::option_default_communication_type,
         this->m_core,
         this->m_ready,
         channels,
         this->m_stage_info) },
-    m_connection_manager { this->m_agent, this->m_interrupted }
+    m_connection_manager { this->m_agent, this->m_shutdown }
 {
     // log message for printing the PaioStage properties
     std::string message { "PaioStage parameterized constructor (" };
@@ -56,7 +59,7 @@ PaioStage::PaioStage (const int& channels,
     message.append (default_object_creation ? "true" : "false").append (", ");
     message.append (std::to_string (this->m_core.use_count ())).append (", ");
     message.append (std::to_string (this->m_ready.use_count ())).append (", ");
-    message.append (std::to_string (this->m_interrupted.use_count ())).append (", ");
+    message.append (std::to_string (this->m_shutdown.use_count ())).append (", ");
     message.append (std::to_string (this->m_agent.use_count ())).append (", ");
     message.append (std::to_string (this->m_stage_info.use_count ())).append (")\n");
     Logging::log_debug (message);
@@ -73,11 +76,11 @@ PaioStage::PaioStage (const int& channels,
     const std::string& differentiation_rules_file_path,
     const std::string& enforcement_rules_file_path,
     const bool& execute_on_receive) :
-    m_core {
-        std::make_shared<Core> (channels, option_create_default_channels, default_object_creation)
-    },
+    m_core { std::make_shared<Core> (channels,
+        paio::options::option_create_default_channels,
+        default_object_creation) },
     m_stage_info { std::make_shared<StageInfo> (stage_identifier) },
-    m_agent { std::make_shared<Agent> (option_default_communication_type,
+    m_agent { std::make_shared<Agent> (paio::options::option_default_communication_type,
         this->m_core,
         this->m_ready,
         housekeeping_rules_file_path,
@@ -86,7 +89,7 @@ PaioStage::PaioStage (const int& channels,
         channels,
         this->m_stage_info,
         execute_on_receive) },
-    m_connection_manager { this->m_agent, this->m_interrupted }
+    m_connection_manager { this->m_agent, this->m_shutdown }
 {
     // log message for printing the PaioStage properties
     std::string message { "PaioStage parameterized constructor (" };
@@ -94,7 +97,7 @@ PaioStage::PaioStage (const int& channels,
     message.append (default_object_creation ? "true" : "false").append (", ");
     message.append (std::to_string (this->m_core.use_count ())).append (", ");
     message.append (std::to_string (this->m_ready.use_count ())).append (", ");
-    message.append (std::to_string (this->m_interrupted.use_count ())).append (", ");
+    message.append (std::to_string (this->m_shutdown.use_count ())).append (", ");
     message.append (std::to_string (this->m_agent.use_count ())).append (", ");
     message.append (std::to_string (this->m_stage_info.use_count ())).append (")\n");
     Logging::log_debug (message);
@@ -110,16 +113,16 @@ PaioStage::PaioStage (const int& channels,
     const CommunicationType& connection_type,
     const std::string& address,
     const int& port) :
-    m_core {
-        std::make_shared<Core> (channels, option_create_default_channels, default_object_creation)
-    },
+    m_core { std::make_shared<Core> (channels,
+        paio::options::option_create_default_channels,
+        default_object_creation) },
     m_stage_info { std::make_shared<StageInfo> (stage_identifier) },
     m_agent { std::make_shared<Agent> (connection_type,
         this->m_core,
         this->m_ready,
         channels,
         this->m_stage_info) },
-    m_connection_manager { { connection_type, address, port }, this->m_agent, this->m_interrupted }
+    m_connection_manager { { connection_type, address, port }, this->m_agent, this->m_shutdown }
 {
     // log message for printing the PaioStage properties
     std::string message { "PaioStage parameterized constructor (" };
@@ -127,7 +130,7 @@ PaioStage::PaioStage (const int& channels,
     message.append (default_object_creation ? "true" : "false").append (", ");
     message.append (std::to_string (this->m_core.use_count ())).append (", ");
     message.append (std::to_string (this->m_ready.use_count ())).append (", ");
-    message.append (std::to_string (this->m_interrupted.use_count ())).append (", ");
+    message.append (std::to_string (this->m_shutdown.use_count ())).append (", ");
     message.append (std::to_string (this->m_agent.use_count ())).append (", ");
     message.append (std::to_string (this->m_stage_info.use_count ())).append (")\n");
     Logging::log_debug (message);
@@ -142,19 +145,19 @@ PaioStage::~PaioStage ()
     std::string message { "PaioStage default destructor (" };
     message.append (std::to_string (this->m_core.use_count ())).append (", ");
     message.append (std::to_string (this->m_ready.use_count ())).append (", ");
-    message.append (std::to_string (this->m_interrupted.use_count ())).append (", ");
+    message.append (std::to_string (this->m_shutdown.use_count ())).append (", ");
     message.append (std::to_string (this->m_agent.use_count ())).append (", ");
     message.append (std::to_string (this->m_stage_info.use_count ())).append (")\n");
     Logging::log_debug_explicit (message);
 
     // disconnect from the control plane; mark connection with the control plane interrupted
-    this->mark_connection_interrupted ();
+    this->shutdown_connection ();
 }
 
 // is_interrupted call. Verifies if the data plane execution was interrupted.
 bool PaioStage::is_interrupted () const
 {
-    return this->m_interrupted->load ();
+    return this->m_shutdown->load ();
 }
 
 // is_ready call. Verifies if the data plane setup phase is made (i.e., if the data plane is ready
@@ -165,9 +168,9 @@ bool PaioStage::is_ready () const
 }
 
 // mark_connection_interrupted call. Marks the data plane stage's execution as interrupted.
-void PaioStage::mark_connection_interrupted ()
+void PaioStage::shutdown_connection ()
 {
-    this->m_interrupted->store (true);
+    this->m_shutdown->store (true);
 }
 
 // set_stage_description call. Update StageInfo's description.
@@ -216,10 +219,10 @@ std::string PaioStage::get_stage_info_name () const
     return this->m_stage_info->get_name ();
 }
 
-// get_stage_info_env call. Return the StageInfo's env.
-std::string PaioStage::get_stage_info_env () const
+// get_stage_info_opt call. Return the StageInfo's opt.
+std::string PaioStage::get_stage_info_opt () const
 {
-    return this->m_stage_info->get_env ();
+    return this->m_stage_info->get_opt ();
 }
 
 // get_stage_info_pid call. Return the StageInfo's pid.

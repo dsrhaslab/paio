@@ -29,7 +29,7 @@ namespace paio {
  *  the stage;
  *  - m_ready: shared pointer to an atomic boolean that marks the data plane stage ready to receive
  *  requests from the I/O layer;
- *  - m_interrupted: shared pointer to an atomic boolean that marks the stage interrupted, ceasing
+ *  - m_shutdown: shared pointer to an atomic boolean that marks the stage interrupted, ceasing
  *  all enforcement activity;
  *  - m_stage_info: shared pointer to a StageInfo object that contains the stage's name, pid, ppid,
  *  hostname, etc.;
@@ -50,10 +50,9 @@ class PaioStage {
 private:
     std::shared_ptr<Core> m_core { nullptr };
     std::shared_ptr<std::atomic<bool>> m_ready { std::make_shared<std::atomic<bool>> (false) };
-    std::shared_ptr<std::atomic<bool>> m_interrupted { std::make_shared<std::atomic<bool>> (
-        false) };
     std::shared_ptr<StageInfo> m_stage_info { nullptr };
     std::shared_ptr<Agent> m_agent { nullptr };
+    std::shared_ptr<std::atomic<bool>> m_shutdown { std::make_shared<std::atomic<bool>> (false) };
     ConnectionManager m_connection_manager {};
     Logging m_logging { option_default_debug_log };
 
@@ -81,10 +80,10 @@ private:
         Result& result);
 
     /**
-     * mark_connection_interrupted: Marks the m_interrupted shared pointer to true, which marks
-     * the interruption of the data plane stage's execution.
+     * shutdown_connection: Sets the m_shutdown shared pointer to true, which marks the interruption
+     * of the data plane stage's execution.
      */
-    void mark_connection_interrupted ();
+    void shutdown_connection ();
 
 public:
     /**
@@ -181,10 +180,10 @@ public:
     [[nodiscard]] std::string get_stage_info_name () const;
 
     /**
-     * get_stage_info_env: get the environment of the data plane stage.
-     * @return Returns a const value of the m_stage_info.env parameter.
+     * get_stage_info_opt: get the environment of the data plane stage.
+     * @return Returns a const value of the m_stage_info.opt parameter.
      */
-    [[nodiscard]] std::string get_stage_info_env () const;
+    [[nodiscard]] std::string get_stage_info_opt () const;
 
     /**
      * get_stage_info_pid: get the process identifier of the data plane stage.
@@ -216,10 +215,9 @@ public:
      */
     [[nodiscard]] std::string stage_info_to_string () const;
 
-    // fixme: temporary
+    // FIXME: Needing refactor or cleanup -@ricardomacedo at 9/27/2022, 2:53:29 PM
+    // remove get_connection_manager and get_core; only used in paio_southbound_interface_test.
     ConnectionManager* get_connection_manager ();
-
-    // fixme: temporary
     Core* get_core ();
 };
 } // namespace paio

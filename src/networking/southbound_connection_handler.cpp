@@ -18,19 +18,18 @@ SouthboundConnectionHandler::SouthboundConnectionHandler ()
 SouthboundConnectionHandler::SouthboundConnectionHandler (
     const ConnectionOptions& connection_options,
     std::shared_ptr<Agent> agent_ptr,
-    std::shared_ptr<std::atomic<bool>> interrupted) :
-    ConnectionHandler { connection_options,
-        agent_ptr,
-        interrupted,
-        ConnectionHandlerType::southbound_handler }
+    std::shared_ptr<std::atomic<bool>> shutdown) :
+    ConnectionHandler { connection_options, agent_ptr, ConnectionHandlerType::southbound_handler },
+    m_stage_shutdown { shutdown }
 {
     Logging::log_debug ("SouthboundConnectionHandler fully parameterized constructor");
 }
 
 // SouthboundConnectionHandler parameterized constructor.
 SouthboundConnectionHandler::SouthboundConnectionHandler (std::shared_ptr<Agent> agent_ptr,
-    std::shared_ptr<std::atomic<bool>> interrupted) :
-    ConnectionHandler { agent_ptr, interrupted, ConnectionHandlerType::southbound_handler }
+    std::shared_ptr<std::atomic<bool>> shutdown) :
+    ConnectionHandler { agent_ptr, ConnectionHandlerType::southbound_handler },
+    m_stage_shutdown { shutdown }
 {
     Logging::log_debug ("SouthboundConnectionHandler parameterized constructor");
 }
@@ -39,8 +38,6 @@ SouthboundConnectionHandler::SouthboundConnectionHandler (std::shared_ptr<Agent>
 SouthboundConnectionHandler::~SouthboundConnectionHandler ()
 {
     Logging::log_debug_explicit ("SouthboundConnectionHandler default destructor");
-    // explicitly set connection interrupted on destructor.
-    this->m_connection_interrupted->store (true);
 }
 
 // read_control_operation_from_socket call. Read ControlOperation object from socket.
@@ -54,8 +51,15 @@ ssize_t SouthboundConnectionHandler::read_control_operation_from_socket (
     // verify if m_socket is valid
     if (ConnectionHandler::m_socket->load () > 0) {
         // read instruction from socket
-        return_value
-            = ::read (ConnectionHandler::m_socket->load (), operation, sizeof (ControlOperation));
+        return_value = ConnectionHandler::socket_read (operation, sizeof (ControlOperation));
+
+        // create debug message
+        std::string log_message = "southbound_handler::socket_read (";
+        log_message.append (std::to_string (return_value)).append (",");
+        log_message.append (std::to_string (operation->m_operation_type)).append (",");
+        log_message.append (std::to_string (operation->m_operation_subtype)).append (",");
+        log_message.append (std::to_string (operation->m_size)).append (")");
+        Logging::log_debug (log_message);
 
         if (return_value < 0) {
             Logging::log_error (
@@ -83,7 +87,7 @@ ssize_t SouthboundConnectionHandler::mark_stage_as_ready (const ControlOperation
         // acquire read lock
         std::unique_lock<std::mutex> read_lock (this->m_socket_read_lock);
         // read StageReadyRaw structure from socket
-        return_value = ::read (ConnectionHandler::m_socket->load (), &mark_stage, operation.m_size);
+        return_value = ConnectionHandler::socket_read (&mark_stage, operation.m_size);
     }
 
     // validate return value
@@ -107,7 +111,7 @@ ssize_t SouthboundConnectionHandler::mark_stage_as_ready (const ControlOperation
         // acquire write lock
         std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
         // send ACK message to the control plane
-        return_value = ::write (ConnectionHandler::m_socket->load (), &response, sizeof (ACK));
+        return_value = ConnectionHandler::socket_write (&response, sizeof (ACK));
 
         if (return_value <= 0) {
             Logging::log_error ("Error while writing ACK message to control plane ("
@@ -128,8 +132,7 @@ ssize_t SouthboundConnectionHandler::collect_statistics (const ControlOperation&
     { // entering critical section
         // acquire read lock
         std::unique_lock<std::mutex> read_lock (this->m_socket_read_lock);
-        return_value
-            = ::read (ConnectionHandler::m_socket->load (), &collect_stats_meta, operation.m_size);
+        return_value = ConnectionHandler::socket_read (&collect_stats_meta, operation.m_size);
     }
 
     // validate number of bytes read
@@ -152,8 +155,7 @@ ssize_t SouthboundConnectionHandler::collect_statistics (const ControlOperation&
             // acquire write lock
             std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
             // send the total number of collected channel statistics (prepare the control plane)
-            return_value
-                = ::write (ConnectionHandler::m_socket->load (), &response, operation.m_size);
+            return_value = ConnectionHandler::socket_write (&response, operation.m_size);
 
             // verify return value of socket write
             if (return_value != sizeof (CollectStatisticsMetadata)) {
@@ -164,9 +166,8 @@ ssize_t SouthboundConnectionHandler::collect_statistics (const ControlOperation&
             }
 
             for (auto& channel_stat : channel_stats) {
-                return_value = ::write (ConnectionHandler::m_socket->load (),
-                    &channel_stat,
-                    sizeof (ChannelStatsRaw));
+                return_value
+                    = ConnectionHandler::socket_write (&channel_stat, sizeof (ChannelStatsRaw));
 
                 // verify return value of socket write
                 if (return_value != sizeof (ChannelStatsRaw)) {
@@ -216,9 +217,8 @@ ssize_t SouthboundConnectionHandler::collect_instance_statistics (const ControlO
                 // acquire write lock
                 std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
                 // send statistics object through socket
-                return_value = ::write (ConnectionHandler::m_socket->load (),
-                    &stats_kvs_raw,
-                    sizeof (StatsSilkRaw));
+                return_value
+                    = ConnectionHandler::socket_write (&stats_kvs_raw, sizeof (StatsSilkRaw));
             }
 
             // verify return value of socket write
@@ -273,8 +273,7 @@ ssize_t SouthboundConnectionHandler::collect_instance_statistics (const ControlO
                 // acquire write lock
                 std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
                 // send statistics object through socket
-                return_value = ::write (ConnectionHandler::m_socket->load (),
-                    &stats_tensorflow,
+                return_value = ConnectionHandler::socket_write (&stats_tensorflow,
                     sizeof (StatsTensorFlowRaw));
             }
 
@@ -291,6 +290,117 @@ ssize_t SouthboundConnectionHandler::collect_instance_statistics (const ControlO
                     + std::to_string (stats_tensorflow.m_read_rate / 1024 / 1024) + " MiB/s read; "
                     + std::to_string (stats_tensorflow.m_write_rate / 1024 / 1024)
                     + " MiB/s write.");
+            }
+
+            break;
+        }
+
+        case ControlPlaneOperationSubtype::collect_stats_global: {
+            // create container to store temporary metrics in raw format
+            std::map<long, std::vector<double>> detailed_stats {};
+            // collect instance statistics through the Agent module
+            status = this->m_agent_ptr->collect_detailed_channel_statistics (-1, detailed_stats);
+
+            // create temporary StatsGlobalRaw object
+            StatsGlobalRaw stats_global {};
+
+            // verify exit status of collect_detailed_channel_statistics
+            if (status.is_ok ()) {
+                // aggregate statistics before sending them through the socket
+                status = this->aggregate_global_statistics (detailed_stats, stats_global);
+
+                // validate result of the aggregation operation
+                if (!status.is_ok ()) {
+                    Logging::log_error ("collect_instance_statistics: error while aggregating "
+                                        "global statistics.");
+                } else {
+                    // TODO: Tasks pending completion -@gsd at 6/17/2022, 2:15:07 PM
+                    // remove this log message
+                    Logging::log_debug (
+                        "global-statistics :: " + std::to_string (stats_global.m_total_rate));
+                }
+            } else {
+                Logging::log_error ("collect_instance_statistics: error while collecting detailed "
+                                    "channel statistics.");
+            }
+
+            // submit statistics to the controller
+            { // entering critical section
+                // acquire write lock
+                std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
+                // send statistics object through socket
+                return_value
+                    = ConnectionHandler::socket_write (&stats_global, sizeof (StatsGlobalRaw));
+            }
+
+            // verify return value of socket write
+            if (return_value <= 0) {
+                status = PStatus::Error ();
+                Logging::log_error ("Error while writing TensorFlow statistics to the control plane"
+                                    " ("
+                    + std::to_string (return_value) + ")");
+            } else {
+                status = PStatus::OK ();
+                // logging debug message
+                Logging::log_debug ("collect_instance_statistics: "
+                    + std::to_string (stats_global.m_total_rate) + " IOPS/s | Bytes/s");
+            }
+
+            break;
+        }
+
+        case ControlPlaneOperationSubtype::collect_stats_metadata_data: {
+            // create container to store temporary metrics in raw format
+            std::map<long, std::vector<double>> detailed_stats {};
+            // collect instance statistics through the Agent module
+            status = this->m_agent_ptr->collect_detailed_channel_statistics (-1, detailed_stats);
+
+            // create temporary StatsDataMetadataRaw object
+            StatsDataMetadataRaw stats_metadata_data {};
+
+            // verify exit status of collect_detailed_channel_statistics
+            if (status.is_ok ()) {
+                // aggregate statistics before sending them through the socket
+                status = this->aggregate_metadata_data_statistics (detailed_stats,
+                    stats_metadata_data);
+
+                // validate result of the aggregation operation
+                if (!status.is_ok ()) {
+                    Logging::log_error ("collect_instance_statistics: error while aggregating "
+                                        "global statistics.");
+                } else {
+                    // TODO: Tasks pending completion -@gsd at 6/17/2022, 2:15:07 PM
+                    // remove this log message
+                    Logging::log_debug ("data-metadata-statistics :: "
+                        + std::to_string (stats_metadata_data.m_total_data_rate) + " - "
+                        + std::to_string (stats_metadata_data.m_total_metadata_rate));
+                }
+            } else {
+                Logging::log_error ("collect_instance_statistics: error while collecting detailed "
+                                    "channel statistics.");
+            }
+
+            // submit statistics to the controller
+            { // entering critical section
+                // acquire write lock
+                std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
+                // send statistics object through socket
+                return_value = ConnectionHandler::socket_write (&stats_metadata_data,
+                    sizeof (StatsDataMetadataRaw));
+            }
+
+            // verify return value of socket write
+            if (return_value <= 0) {
+                status = PStatus::Error ();
+                Logging::log_error ("Error while writing TensorFlow statistics to the control plane"
+                                    " ("
+                    + std::to_string (return_value) + ")");
+            } else {
+                status = PStatus::OK ();
+                // logging debug message
+                Logging::log_debug ("collect_instance_statistics: "
+                    + std::to_string (stats_metadata_data.m_total_metadata_rate) + " IOPS/s; "
+                    + std::to_string (stats_metadata_data.m_total_data_rate) + " Bytes/s; ");
             }
 
             break;
@@ -321,9 +431,8 @@ ssize_t SouthboundConnectionHandler::create_housekeeping_rule (const ControlOper
                 // acquire read lock
                 std::unique_lock<std::mutex> read_lock (this->m_socket_read_lock);
                 // read structure from socket
-                return_value = ::read (ConnectionHandler::m_socket->load (),
-                    &create_channel_rule,
-                    operation.m_size);
+                return_value
+                    = ConnectionHandler::socket_read (&create_channel_rule, operation.m_size);
             }
 
             // validate number of bytes read
@@ -374,9 +483,8 @@ ssize_t SouthboundConnectionHandler::create_housekeeping_rule (const ControlOper
                 // acquire read lock
                 std::unique_lock<std::mutex> read_lock (this->m_socket_read_lock);
                 // read structure from socket
-                return_value = ::read (ConnectionHandler::m_socket->load (),
-                    &create_object_rule,
-                    operation.m_size);
+                return_value
+                    = ConnectionHandler::socket_read (&create_object_rule, operation.m_size);
             }
 
             // validate number of bytes read
@@ -398,7 +506,7 @@ ssize_t SouthboundConnectionHandler::create_housekeeping_rule (const ControlOper
             // create_object_rule.m_operation_type = static_cast<uint32_t> (POSIX::read);
             // create_object_rule.m_operation_context = static_cast<uint32_t> (POSIX::no_op);
             // create_object_rule.m_enforcement_object_type = static_cast<long>
-            // (EnforcementObjectType::DRL); create_object_rule.m_property_first = 10000;
+            // (EnforcementObjectType::drl); create_object_rule.m_property_first = 10000;
             // create_object_rule.m_property_second = 120000;
 
             // create differentiation properties vector
@@ -428,6 +536,9 @@ ssize_t SouthboundConnectionHandler::create_housekeeping_rule (const ControlOper
         case ControlPlaneOperationSubtype::no_op:
         case ControlPlaneOperationSubtype::collect_stats_rocksdb:
         case ControlPlaneOperationSubtype::collect_stats_tensorflow:
+        case ControlPlaneOperationSubtype::collect_stats_global:
+        case ControlPlaneOperationSubtype::collect_stats_metadata_data:
+        case ControlPlaneOperationSubtype::collect_stats_mds:
             throw std::runtime_error ("Unsupported operation type.");
     }
 
@@ -439,7 +550,7 @@ ssize_t SouthboundConnectionHandler::create_housekeeping_rule (const ControlOper
     { // entering critical section
         // acquire write lock
         std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
-        return_value = ::write (ConnectionHandler::m_socket->load (), &response, sizeof (ACK));
+        return_value = ConnectionHandler::socket_write (&response, sizeof (ACK));
 
         if (return_value <= 0) {
             Logging::log_error ("Error while writing ACK message to control plane ("
@@ -471,8 +582,7 @@ ssize_t SouthboundConnectionHandler::create_enforcement_rule (const ControlOpera
         // acquire read lock
         std::unique_lock<std::mutex> read_lock (this->m_socket_read_lock);
         // read binary structure
-        return_value
-            = ::read (ConnectionHandler::m_socket->load (), &enforcement_rule, operation.m_size);
+        return_value = ConnectionHandler::socket_read (&enforcement_rule, operation.m_size);
     }
 
     // validate number of bytes read
@@ -504,7 +614,7 @@ ssize_t SouthboundConnectionHandler::create_enforcement_rule (const ControlOpera
     { // entering critical section
         // acquire write lock
         std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
-        return_value = ::write (ConnectionHandler::m_socket->load (), &response, sizeof (ACK));
+        return_value = ConnectionHandler::socket_write (&response, sizeof (ACK));
     }
 
     if (return_value <= 0) {
@@ -632,6 +742,66 @@ PStatus SouthboundConnectionHandler::aggregate_tf_statistics (
     return status;
 }
 
+// aggregate_global_statistics call. Aggregate global stats into a StatsGlobalRaw object.
+PStatus SouthboundConnectionHandler::aggregate_global_statistics (
+    const std::map<long, std::vector<double>>& detailed_instance_stats,
+    StatsGlobalRaw& stats_global)
+{
+    PStatus status = PStatus::Error ();
+    double global_rate = 0;
+
+    // validate if detailed_instance_stats container is not empty
+    if (!detailed_instance_stats.empty ()) {
+        // aggregate statistics for foreground I/O flows
+        for (auto& entry : detailed_instance_stats) {
+            // aggregate all operations (including no_op)
+            global_rate += std::accumulate (entry.second.begin (), entry.second.end (), 0.0);
+        }
+
+        // update aggregated statistic of StatsGlobalRaw object
+        stats_global.m_total_rate = global_rate;
+
+        status = PStatus::OK ();
+    } else {
+        Logging::log_error ("aggregate_global_statistics: detailed stats container is empty; "
+                            "could not compute statistics.");
+    }
+
+    return status;
+}
+
+// aggregate_global_statistics call. Aggregate global stats into a StatsDataMetadataRaw object.
+PStatus SouthboundConnectionHandler::aggregate_metadata_data_statistics (
+    const std::map<long, std::vector<double>>& detailed_instance_stats,
+    StatsDataMetadataRaw& stats_data_metadata)
+{
+    PStatus status = PStatus::Error ();
+    double data_rate = 0;
+    double metadata_rate = 0;
+
+    // validate if detailed_instance_stats container is not empty
+    if (!detailed_instance_stats.empty ()) {
+        // aggregate statistics for data and metadata flows
+        for (auto& entry : detailed_instance_stats) {
+            data_rate += entry.second[static_cast<int> (POSIX_META::data_op)
+                % paio::core::posix_meta_size];
+            metadata_rate += entry.second[static_cast<int> (POSIX_META::meta_op)
+                % paio::core::posix_meta_size];
+        }
+
+        // update aggregated statistic of StatsDataMetadataRaw object
+        stats_data_metadata.m_total_data_rate = data_rate;
+        stats_data_metadata.m_total_metadata_rate = metadata_rate;
+
+        status = PStatus::OK ();
+    } else {
+        Logging::log_error ("aggregate_metadata_data_statistics: detailed stats container is "
+                            "empty; could not compute statistics.");
+    }
+
+    return status;
+}
+
 // execute_housekeeping_rules call. Execute postponed or pending HousekeepingRules.
 ssize_t SouthboundConnectionHandler::execute_housekeeping_rules (const ControlOperation& operation)
 {
@@ -650,7 +820,7 @@ ssize_t SouthboundConnectionHandler::execute_housekeeping_rules (const ControlOp
     { // entering critical section
         // acquire write lock
         std::unique_lock<std::mutex> write_lock (this->m_socket_write_lock);
-        return_value = ::write (ConnectionHandler::m_socket->load (), &response, sizeof (ACK));
+        return_value = ConnectionHandler::socket_write (&response, sizeof (ACK));
     }
 
     // validate return value
@@ -738,7 +908,7 @@ void SouthboundConnectionHandler::listen (const bool& debug)
     auto read_bytes = this->read_control_operation_from_socket (&control_operation);
 
     // validate bytes read and connection state
-    while (read_bytes > 0 && !this->is_connection_interrupted ()) {
+    while (read_bytes > 0 && this->m_stage_shutdown->load () == false) {
         // Receive and handle the rule submitted by the controller
         read_bytes = this->handle_control_operation (control_operation, debug);
 
@@ -750,9 +920,6 @@ void SouthboundConnectionHandler::listen (const bool& debug)
         // read next rule from the socket
         read_bytes = this->read_control_operation_from_socket (&control_operation);
     }
-
-    // interrupt connection
-    this->m_connection_interrupted->store (true);
 }
 
 } // namespace paio::networking

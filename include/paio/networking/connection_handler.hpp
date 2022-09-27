@@ -7,10 +7,12 @@
 #define PAIO_CONNECTION_HANDLER_HPP
 
 #include <arpa/inet.h>
+#include <dlfcn.h>
 #include <memory>
 #include <netinet/in.h>
 #include <paio/core/agent.hpp>
 #include <paio/networking/connection_options.hpp>
+#include <paio/options/libc_headers.hpp>
 #include <sys/un.h>
 #include <utility>
 
@@ -49,7 +51,69 @@ protected:
     struct sockaddr_in m_inet_socket { };
     struct sockaddr_un m_unix_socket { };
     std::shared_ptr<Agent> m_agent_ptr { nullptr };
-    std::shared_ptr<std::atomic<bool>> m_connection_interrupted { nullptr };
+    void* m_dl_ptr { RTLD_NEXT };
+
+    /**
+     * socket_read: read bytes from socket.
+     * Missing description ...
+     * @param buf buffer to store the read bytes.
+     * @param count number of bytes to read.
+     * @return number of bytes read.
+     */
+    ssize_t socket_read (void* buf, size_t count)
+    {
+        // validate if socket is valid
+        if (this->m_socket == nullptr || this->m_socket->load () == -1) {
+            return -1;
+        }
+
+        // validate if ld_preload is enabled and read from socket accordingly
+        if (option_default_ld_preload_enabled) {
+            // submit read operation through lib_ptr
+            if (this->m_dl_ptr != nullptr) {
+                return ((libc_read_t)::dlsym (this->m_dl_ptr,
+                    "read")) (this->m_socket->load (), buf, count);
+            } else {
+                // submit read operation through RTLD_NEXT (rigid)
+                return (
+                    (libc_read_t)::dlsym (RTLD_NEXT, "read")) (this->m_socket->load (), buf, count);
+            }
+        } else {
+            // submit read operation through libc
+            return ::read (this->m_socket->load (), buf, count);
+        }
+    }
+
+    /**
+     * socket_write: write bytes to socket.
+     * Missing description ...
+     * @param buf buffer to write.
+     * @param count number of bytes to write.
+     * @return number of bytes written.
+     */
+    ssize_t socket_write (const void* buf, size_t count)
+    {
+        // validate if socket is valid
+        if (this->m_socket == nullptr || this->m_socket->load () == -1) {
+            return -1;
+        }
+
+        // validate if ld_preload is enabled and write to socket accordingly
+        if (option_default_ld_preload_enabled) {
+            // submit write operation through lib_ptr
+            if (this->m_dl_ptr != nullptr) {
+                return ((libc_write_t)::dlsym (this->m_dl_ptr,
+                    "write")) (this->m_socket->load (), buf, count);
+            } else {
+                // submit write operation through RTLD_NEXT (rigid)
+                return ((libc_write_t)::dlsym (RTLD_NEXT,
+                    "write")) (this->m_socket->load (), buf, count);
+            }
+        } else {
+            // submit write operation through libc
+            return ::write (this->m_socket->load (), buf, count);
+        }
+    }
 
     /**
      * read_control_operation_from_socket: read ControlOperation object from socket (which is
@@ -111,7 +175,8 @@ protected:
                 return "remove-rule";
 
             default:
-                throw std::logic_error ("ConnectionHandler: unrecognized operation type.");
+                throw std::logic_error ("ConnectionHandler: unrecognized operation type ("
+                    + std::to_string (static_cast<int> (operation_type)) + ")");
         }
     }
 
@@ -135,9 +200,13 @@ protected:
                     case ControlPlaneOperationSubtype::collect_stats_tensorflow:
                         return "collect-tensorflow-statistics";
 
+                    case ControlPlaneOperationSubtype::collect_stats_global:
+                        return "collect-global-statistics";
+
                     default:
-                        throw std::logic_error (
-                            "ConnectionHandler: unrecognized operation subtype.");
+                        Logging::log_warn ("ConnectionHandler: unrecognized operation subtype ("
+                            + std::to_string (static_cast<int> (operation_subtype)) + ")");
+                        return "<undefined>";
                 }
 
             case ControlPlaneOperationType::create_hsk_rule:
@@ -149,12 +218,15 @@ protected:
                         return "create-object";
 
                     default:
-                        throw std::logic_error (
-                            "ConnectionHandler: unrecognized operation subtype.");
+                        Logging::log_warn ("ConnectionHandler: unrecognized operation subtype ("
+                            + std::to_string (static_cast<int> (operation_subtype)) + ")");
+                        return "<undefined>";
                 }
 
             default:
-                throw std::logic_error ("ConnectionHandler: unrecognized operation type.");
+                Logging::log_warn ("ConnectionHandler: unrecognized operation type ("
+                    + std::to_string (static_cast<int> (operation_type)) + ")");
+                return "<undefined>";
         }
     }
 
@@ -248,7 +320,7 @@ private:
         PStatus status = PStatus::Error ();
         switch (this->m_connection_options.get_connection_type ()) {
             // create a Unix Domain Socket connection
-            case CommunicationType::unix:
+            case CommunicationType::_unix:
                 status = this->establish_unix_domain_socket_connection (address.data ());
                 break;
 
@@ -275,8 +347,6 @@ private:
 
         if (status.is_error ()) {
             throw std::runtime_error ("Error while creating connection.");
-        } else {
-            this->set_connection_interrupted (true);
         }
     }
 
@@ -368,7 +438,7 @@ public:
     /**
      * ConnectionHandler default constructor.
      */
-    ConnectionHandler () : m_connection_interrupted { std::make_shared<std::atomic<bool>> (false) }
+    ConnectionHandler ()
     {
         Logging::log_debug ("ConnectionManager default constructor.");
 
@@ -389,15 +459,13 @@ public:
      */
     ConnectionHandler (const ConnectionOptions& connection_options,
         std::shared_ptr<Agent> agent_ptr,
-        std::shared_ptr<std::atomic<bool>> interrupted,
         const ConnectionHandlerType& connection_handler_type) :
         m_socket { std::make_shared<std::atomic<int>> (-1) },
         m_connection_options { connection_options },
         m_agent_ptr { agent_ptr },
-        m_connection_interrupted { interrupted },
         m_handler_type { connection_handler_type }
     {
-        Logging::log_debug ("ConnectionHandler parameterized constructor.");
+        Logging::log_debug ("ConnectionHandler (full) parameterized constructor.");
 
         // connect to the SDS control plane
         this->connect_to_control_plane (connection_options.get_address (),
@@ -414,12 +482,10 @@ public:
      * ready to receive control operations.
      */
     ConnectionHandler (std::shared_ptr<Agent> agent_ptr,
-        std::shared_ptr<std::atomic<bool>> interrupted,
         const ConnectionHandlerType& connection_handler_type) :
         m_socket { std::make_shared<std::atomic<int>> (-1) },
         m_connection_options {},
         m_agent_ptr { agent_ptr },
-        m_connection_interrupted { interrupted },
         m_handler_type { connection_handler_type }
     {
         Logging::log_debug ("ConnectionHandler parameterized constructor.");
@@ -447,29 +513,6 @@ public:
     [[nodiscard]] bool is_configured () const
     {
         return (this->m_socket->load () >= 0) && (this->m_agent_ptr != nullptr);
-    }
-
-    /**
-     * is_connection_interrupted: Verify if the connection between the data and control plane is
-     * established or was interrupted. This is useful for finishing endless loops possibly created
-     * in the listen () call, thus terminating the communication between the data plane stage and
-     * the control plane.
-     * @return Returns a const value of the m_connection_interrupted variable.
-     */
-    [[nodiscard]] bool is_connection_interrupted () const
-    {
-        return this->m_connection_interrupted->load ();
-    }
-
-    /**
-     * set_connection_interrupted: Atomically defines a new value for the shared
-     * m_connection_interrupted parameter. This will allow to terminate the connection between the
-     * data plane stage and the SDS controller.
-     * @param value New value to be updated.
-     */
-    void set_connection_interrupted (bool value)
-    {
-        this->m_connection_interrupted->store (value);
     }
 };
 

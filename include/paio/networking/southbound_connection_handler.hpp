@@ -31,6 +31,7 @@ class SouthboundConnectionHandler : public ConnectionHandler {
 private:
     std::mutex m_socket_read_lock;
     std::mutex m_socket_write_lock;
+    std::shared_ptr<std::atomic<bool>> m_stage_shutdown { nullptr };
 
     /**
      * aggregate_kvs_statistics: Auxiliary method to aggregate and compute the statistics of use
@@ -61,6 +62,29 @@ private:
         StatsTensorFlowRaw& stats_tf);
 
     /**
+     * aggregate_global_statistics: Auxiliary method to aggregate and compute the statistics in
+     * all channels before dispatching them to the control plane.
+     * @param detailed_channel_stats Container that comprises the raw metrics collected from each
+     * channel installed in the data plane stage.
+     * @param stats_global RAW object containing the aggregated results of the statistics.
+     * @return Returns PStatus::OK if the aggregation was successfully made; PStatus::Error
+     * otherwise.
+     */
+    PStatus aggregate_global_statistics (
+        const std::map<long, std::vector<double>>& detailed_instance_stats,
+        StatsGlobalRaw& stats_global);
+
+    // TODO: Tasks pending completion -@gsd at 6/14/2022, 10:32:29 PM
+    // implement the function to aggregate statistics based on data and metadata operations
+    PStatus aggregate_metadata_data_statistics (
+        const std::map<long, std::vector<double>>& detailed_instance_stats,
+        StatsDataMetadataRaw& stats_data_metadata);
+
+    // TODO: Tasks pending completion -@gsd at 6/14/2022, 10:32:58 PM
+    // implement the function to aggregate statistics based on their MDS
+    PStatus aggregate_mds_statistics ();
+
+    /**
      * mark_stage_as_ready: this method marks the data plane stage ready to receive requests from
      * the target I/O layer.
      * @param control_operation ControlOperation object that contains the size of the message that
@@ -70,7 +94,7 @@ private:
     ssize_t mark_stage_as_ready (const ControlOperation& operation);
 
     /**
-     * create_housekeeping_rule: Create a HousekeepingRule to be inserted in the PAI/O Stage.
+     * create_housekeeping_rule: Create a HousekeepingRule to be inserted in the PAIO Stage.
      * @param operation ControlOperation structure that contains important information about the
      * incoming Control plane's instruction.
      * @return Returns the amount of written bytes to the socket.
@@ -139,21 +163,21 @@ public:
      * @param connection_options Defines the main options to be used to establish the connection
      * between the data plane stage and the SDS control plane.
      * @param agent_ptr Shared pointer to the Agent object.
-     * @param interrupted Shared pointer to the atomic boolean that indicates if the connection is
-     * interrupted.
+     * @param shutdown Shared pointer to the atomic boolean that indicates if the data plane stage
+     * should move to a shutdown state.
      */
     SouthboundConnectionHandler (const ConnectionOptions& connection_options,
         std::shared_ptr<Agent> agent_ptr,
-        std::shared_ptr<std::atomic<bool>> interrupted);
+        std::shared_ptr<std::atomic<bool>> shutdown);
 
     /**
      * SouthboundConnectionHandler parameterized constructor.
      * @param agent_ptr Shared pointer to the Agent object.
-     * @param interrupted Shared pointer to the atomic boolean that indicates if the connection is
-     * interrupted.
+     * @param shutdown Shared pointer to the atomic boolean that indicates if the data plane stage
+     * should move to a shutdown state.
      */
     SouthboundConnectionHandler (std::shared_ptr<Agent> agent_ptr,
-        std::shared_ptr<std::atomic<bool>> interrupted);
+        std::shared_ptr<std::atomic<bool>> shutdown);
 
     /**
      * SouthboundConnectionHandler default destructor.
