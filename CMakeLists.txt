@@ -177,12 +177,20 @@ target_sources(
 # ---------------------------------------------------------------------------- #
 # > spdlog --- logging library
 
-FetchContent_Declare(spdlog
-    URL             https://github.com/gabime/spdlog/archive/v1.8.1.tar.gz
-    UPDATE_COMMAND  ""
-    INSTALL_COMMAND ""
-    DOWNLOAD_EXTRACT_TIMESTAMP NEW
-)
+if(${CMAKE_VERSION} VERSION_LESS "3.24.0") 
+    FetchContent_Declare(spdlog
+        URL             https://github.com/gabime/spdlog/archive/v1.8.1.tar.gz
+        UPDATE_COMMAND  ""
+        INSTALL_COMMAND ""
+    )
+else ()
+    FetchContent_Declare(spdlog
+        URL             https://github.com/gabime/spdlog/archive/v1.8.1.tar.gz
+        UPDATE_COMMAND  ""
+        INSTALL_COMMAND ""
+        DOWNLOAD_EXTRACT_TIMESTAMP NEW
+    )
+endif ()
 
 FetchContent_MakeAvailable(spdlog)
 set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -194,12 +202,20 @@ target_link_libraries(paio spdlog)
 if (PAIO_BUILD_BENCHMARKS)
     message(STATUS "Building gflags lib ...")
 
-    FetchContent_Declare (gflags
-        URL             https://github.com/gflags/gflags/archive/refs/tags/v2.2.2.tar.gz
-        UPDATE_COMMAND  ""
-        INSTALL_COMMAND ""
-        DOWNLOAD_EXTRACT_TIMESTAMP NEW
-    )
+    if(${CMAKE_VERSION} VERSION_LESS "3.24.0")
+        FetchContent_Declare(gflags
+            URL             https://github.com/gflags/gflags/archive/refs/tags/v2.2.2.tar.gz
+            UPDATE_COMMAND  ""
+            INSTALL_COMMAND ""
+        )
+    else ()
+        FetchContent_Declare(gflags
+            URL             https://github.com/gflags/gflags/archive/refs/tags/v2.2.2.tar.gz
+            UPDATE_COMMAND  ""
+            INSTALL_COMMAND ""
+            DOWNLOAD_EXTRACT_TIMESTAMP NEW
+        )
+    endif ()
 
     FetchContent_MakeAvailable(gflags)
     target_link_libraries(paio gflags)
