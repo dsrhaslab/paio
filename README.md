@@ -62,6 +62,9 @@ Ricardo Macedo, Yusuke Tanimura, Jason Haga, Vijay Chidambaram, José Pereira, J
 }
 ```
 
+If you use PAIO, give us some [feedback](mailto:ricardo.g.macedo@inesctec.pt) on how to further improve it!
+
+***
 
 ## Getting started with PAIO
 
